@@ -10,8 +10,6 @@ order: 2
 featured: false
 ---
 
-[](https://www.dawoodabubakar.com/)
+PhD
 
-                PhD
-
-                Postdoctoral Research Associate on the EU-funded [PALPABLE project](https://palpable-project.eu/). Research interests are sensors, soft robotics,and their applications in surgical settings.
+Postdoctoral Research Associate on the EU-funded [PALPABLE project](https://palpable-project.eu/). Research interests are sensors, soft robotics,and their applications in surgical settings.

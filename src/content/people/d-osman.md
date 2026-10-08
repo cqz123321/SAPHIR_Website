@@ -12,4 +12,4 @@ featured: false
 
 PhD
 
-                Postdoctoral Research Associate on the EU-funded [PALPABLE project](https://palpable-project.eu/), working towards developing a palpation tool for enhanced visualisation and identification of abnormal tissue during minimally invasive surgery. Her research interests include force, tactile, and shape sensors for soft robotics.
+Postdoctoral Research Associate on the EU-funded [PALPABLE project](https://palpable-project.eu/), working towards developing a palpation tool for enhanced visualisation and identification of abnormal tissue during minimally invasive surgery. Her research interests include force, tactile, and shape sensors for soft robotics.

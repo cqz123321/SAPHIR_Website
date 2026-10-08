@@ -37,7 +37,7 @@ const badges = [
 ].filter(Boolean) as { label: string; href: string; color: string; d: string }[];
 ---
 
-<div class="grid items-start gap-6 sm:grid-cols-[9rem_1fr]">
+<div class="grid min-w-0 items-start gap-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
 <div class="text-center">
   <a href={withBase(`/people/${person.id}`)} class="group block">
     <div
@@ -89,5 +89,5 @@ const badges = [
   }
 </div>
 
-<div class="prose-content space-y-3 text-sm leading-relaxed text-slate-700"><Content /></div>
+<div class="prose-content min-w-0 break-words space-y-3 text-sm leading-relaxed text-slate-700"><Content /></div>
 </div>

@@ -12,4 +12,4 @@ featured: false
 
 PhD
 
-                Postdoctoral research associate employed in the ERC Synergy Grant EndoTheranostics project. Main research interests are: surgical robotics, soft robotics, endoscopy and embodied intelligence.
+Postdoctoral research associate employed in the ERC Synergy Grant EndoTheranostics project. Main research interests are: surgical robotics, soft robotics, endoscopy and embodied intelligence.

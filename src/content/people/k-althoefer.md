@@ -13,4 +13,4 @@ featured: true
 
 Dipl.-lng.Aachen, PhD
 
-                Robot autonomy, soft robotics, systems engineering, modelling of tool-environment interaction dynamics, tactile sensing and haptic perception with applications in robot-assisted minimally invasive surgery, rehabilitation, assistive technologies and human-robot interactions in the manufacturing environment.
+Robot autonomy, soft robotics, systems engineering, modelling of tool-environment interaction dynamics, tactile sensing and haptic perception with applications in robot-assisted minimally invasive surgery, rehabilitation, assistive technologies and human-robot interactions in the manufacturing environment.
