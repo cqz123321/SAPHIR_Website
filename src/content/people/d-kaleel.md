@@ -8,6 +8,4 @@ order: 10
 featured: false
 ---
 
-Studies buoyancy-driven underwater robots.
-
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+Danyaal Kaleel is a PhD student whose research focuses on buoyancy actuation of underwater soft robots. His research is funded by the Defense Science and Technology Laboratory (DSTL). He currently holds a BEng degree in Robotics Engineering (2021) from Queen Mary University of London.

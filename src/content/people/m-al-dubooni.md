@@ -8,6 +8,4 @@ order: 9
 featured: false
 ---
 
-Investigates flexible robots for cleaning nuclear pipework.
-
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+PhD Student with research focus on soft eversion and continuum robots for nuclear pipe decontamination sponsored by the Nuclear Decomissioning Authority.

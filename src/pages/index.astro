@@ -12,11 +12,11 @@ const themes = [
 ];
 ---
 <BaseLayout>
-  <section class="bg-gradient-to-b from-primary-50 to-white">
+  <section class="bg-white">
     <div class="container-page py-16 sm:py-24">
       <div class="mx-auto max-w-3xl text-center">
         <p class="text-sm font-semibold tracking-wide text-accent-600 uppercase">Queen Mary University of London · ARQ</p>
-        <h1 class="mt-4 text-4xl leading-tight font-semibold text-slate-900 sm:text-6xl">SAPHIR<br /><span class="font-serif text-primary-700">Soft Robotics</span></h1>
+        <h1 class="eva-title mt-6">SAPHIR<br />ROBOTICS</h1>
         <p class="mx-auto mt-6 max-w-2xl text-lg text-slate-600">{site.description}</p>
         <div class="mt-8 flex flex-wrap justify-center gap-3">
           <a href="#research" class="rounded-md bg-primary-700 px-5 py-3 text-sm font-semibold text-white hover:bg-primary-800">Explore our research</a>
@@ -52,3 +52,15 @@ const themes = [
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .eva-title {
+    font-family: "EVA-Matisse-EB", "EVA-Matisse-Classic", "EVA-Matisse-Standard", "Times New Roman", serif;
+    font-size: clamp(3.5rem, 12vw, 8rem);
+    font-weight: 900;
+    line-height: .88;
+    letter-spacing: -.055em;
+    color: #000;
+    text-wrap: nowrap;
+  }
+</style>

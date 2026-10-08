@@ -16,7 +16,7 @@ const { title, people } = Astro.props;
     {title}
   </h2>
   <div
-    class="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+    class="grid grid-cols-1 gap-x-12 gap-y-12 lg:grid-cols-2"
   >
     {people.map((p) => <PersonCard person={p} />)}
   </div>

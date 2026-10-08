@@ -8,6 +8,4 @@ order: 11
 featured: false
 ---
 
-Investigates multisensory interactions between robots and animals.
-
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+Jue Chen is a PhD student, and he is funded by the China Scholarship Council (CSC).His research project is Pet-bot: Multisensory-integrated robot-animal interactions.

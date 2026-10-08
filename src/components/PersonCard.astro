@@ -1,5 +1,6 @@
 ---
 import { withBase } from "../lib/urls";
+import { render } from "astro:content";
 import { Image } from "astro:assets";
 import type { Person } from "../lib/content";
 
@@ -7,6 +8,7 @@ interface Props {
   person: Person;
 }
 const { person } = Astro.props;
+const { Content } = await render(person);
 const { name, role, headshot, links } = person.data;
 
 const initials = name
@@ -35,6 +37,7 @@ const badges = [
 ].filter(Boolean) as { label: string; href: string; color: string; d: string }[];
 ---
 
+<div class="grid items-start gap-6 sm:grid-cols-[9rem_1fr]">
 <div class="text-center">
   <a href={withBase(`/people/${person.id}`)} class="group block">
     <div
@@ -84,4 +87,7 @@ const badges = [
       </div>
     )
   }
+</div>
+
+<div class="prose-content space-y-3 text-sm leading-relaxed text-slate-700"><Content /></div>
 </div>

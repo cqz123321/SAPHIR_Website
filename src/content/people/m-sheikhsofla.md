@@ -10,6 +10,6 @@ order: 5
 featured: false
 ---
 
-Works on biologically inspired machines and their control.
+PhD
 
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+                Postdoctoral research associate employed in the ERC Synergy Grant EndoTheranostics project. Main research interests are: soft and bioinspired robotics, mechatronics, and control engineering.

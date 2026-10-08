@@ -8,6 +8,4 @@ order: 13
 featured: false
 ---
 
-Develops sensing and control for everting medical robots.
-
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+Qingzheng Cong is a PhD Scholar at the ARQ group at QMUL. He is funded by a Queen Mary Research Studentship. His research is on soft everting robots for endoluminal and trans-tissue navigation, integrating multimodal sensing and intelligent control for minimally invasive interventions.

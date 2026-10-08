@@ -8,6 +8,4 @@ order: 8
 featured: false
 ---
 
-Studies adhesion and sensing in everting robots.
-
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+Skin Based Adherence and Sensing Methods for Eversion Robots.

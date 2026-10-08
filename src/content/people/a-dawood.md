@@ -10,6 +10,8 @@ order: 2
 featured: false
 ---
 
-Develops sensing technologies for robotic surgery.
+[](https://www.dawoodabubakar.com/)
 
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+                PhD
+
+                Postdoctoral Research Associate on the EU-funded [PALPABLE project](https://palpable-project.eu/). Research interests are sensors, soft robotics,and their applications in surgical settings.

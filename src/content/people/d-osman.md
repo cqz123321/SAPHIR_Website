@@ -10,6 +10,6 @@ order: 7
 featured: false
 ---
 
-Investigates sensing and robotic palpation for surgery.
+PhD
 
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+                Postdoctoral Research Associate on the EU-funded [PALPABLE project](https://palpable-project.eu/), working towards developing a palpation tool for enhanced visualisation and identification of abnormal tissue during minimally invasive surgery. Her research interests include force, tactile, and shape sensors for soft robotics.

@@ -10,6 +10,6 @@ order: 3
 featured: false
 ---
 
-Studies wearable systems and robots that grow by eversion.
+PhD
 
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+                Postdoctoral research associate employed in the ERC Synergy Grant EndoTheranostics project. Main research interests are: soft robotics, eversion robots,wearable robots, soft actuators.

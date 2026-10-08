@@ -10,6 +10,6 @@ order: 4
 featured: false
 ---
 
-Investigates intelligent, compliant robots for endoscopic procedures.
+PhD
 
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+                Postdoctoral research associate employed in the ERC Synergy Grant EndoTheranostics project. Main research interests are: surgical robotics, soft robotics, endoscopy and embodied intelligence.

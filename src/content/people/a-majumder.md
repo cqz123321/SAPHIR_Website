@@ -8,6 +8,4 @@ order: 12
 featured: false
 ---
 
-Studies learning-based robotic handling of delicate objects.
-
-[QMUL group profile](https://www.sems.qmul.ac.uk/research/groups/softrobotics/people/)
+Arnab Majumder is a PhD Scholar at ARQ QMUL. He is funded by Ocado Technology. His research is regarding manipulation of fragile objects using soft or compliant robotic gripper using deep learning.
