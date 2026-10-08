@@ -30,7 +30,7 @@ const socials = [
         </address>
 
         <dl class="mt-6 space-y-2 text-sm">
-          <div class="flex gap-2">
+          {site.email && <div class="flex gap-2">
             <dt class="font-medium text-slate-600">Email</dt>
             <dd>
               <a
@@ -38,8 +38,8 @@ const socials = [
                 class="text-primary-700 hover:underline">{site.email}</a
               >
             </dd>
-          </div>
-          <div class="flex gap-2">
+          </div>}
+          {site.phone && <div class="flex gap-2">
             <dt class="font-medium text-slate-600">Phone</dt>
             <dd>
               <a
@@ -47,7 +47,7 @@ const socials = [
                 class="text-primary-700 hover:underline">{site.phone}</a
               >
             </dd>
-          </div>
+          </div>}
         </dl>
 
         <h3 class="mt-8 text-sm font-semibold tracking-wide text-slate-600 uppercase">

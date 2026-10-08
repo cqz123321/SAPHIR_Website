@@ -40,19 +40,18 @@ export const site: SiteConfig = {
   // Your production URL (used for canonical links + sitemap). Set your domain.
   url: "https://saphir-robotics.github.io/saphir-robotics/",
   description:
-    "One or two sentences describing what your lab studies and why it matters. " +
-    "This shows as the homepage lead and the default meta description.",
-  email: "lab@example.edu",
-  phone: "000-000-0000",
+    "We combine soft materials, sensing and intelligent control to create robots that interact with the physical world.",
+  email: "",
+  phone: "",
   address: [
-    "Example Laboratory",
-    "Your Department",
-    "123 University Way",
-    "City, ST 00000",
+    "SAPHIR · Queen Mary University of London",
+    "School of Engineering and Materials Science",
+    "Mile End Road",
+    "London E1 4NS, United Kingdom",
   ],
-  mapQuery: "123 University Way, City, ST 00000",
+  mapQuery: "Queen Mary University of London, Mile End Road, London E1 4NS",
   social: {
-    scholar: "https://scholar.google.com/citations?user=XXXXXXXX&hl=en",
+    github: "https://github.com/saphir-robotics",
     // twitter: "https://twitter.com/yourhandle",
     // github: "https://github.com/yourorg",
   },
