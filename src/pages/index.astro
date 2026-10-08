@@ -16,10 +16,24 @@ const themes = [
   <section class="bg-white">
     <div class="container-page py-16 sm:py-24">
       <div class="mx-auto max-w-3xl text-center">
-        <p class="text-sm font-semibold tracking-wide text-black uppercase">Queen Mary University of London · ARQ</p>
-        <h1 class="eva-title mt-6">SAPHIR<br />ROBOTICS</h1>
-        <p class="mx-auto mt-7 max-w-xl text-base leading-relaxed tracking-wide text-black sm:text-lg">Soft Articulated Physical-Interaction<br />Intelligent Robots</p>
-        <div class="mt-8 flex flex-wrap justify-center gap-3">
+        
+          <p class="hero-eyebrow text-sm font-semibold tracking-wide text-black uppercase">
+            Queen Mary University of London · ARQ
+          </p>
+
+          <h1 class="eva-title mt-6">
+            <span class="hero-title-line hero-title-first">SAPHIR</span>
+            <span class="hero-title-line hero-title-second">ROBOTICS</span>
+          </h1>
+
+          <div class="hero-accent" aria-hidden="true"></div>
+
+          <p class="hero-subtitle mx-auto mt-7 max-w-xl text-base leading-relaxed tracking-wide text-black sm:text-lg">
+            Soft Articulated Physical-Interaction<br />
+            Intelligent Robots
+          </p>
+
+        <div class="hero-actions mt-8 flex flex-wrap justify-center gap-3">
           <a href="#research" class="rounded-none bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">Explore our research</a>
           <a href={withBase("/people")} class="rounded-md border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Meet the team</a>
         </div>
@@ -65,4 +79,91 @@ const themes = [
     color: #000;
     text-wrap: nowrap;
   }
+  
+  /* SAPHIR hero entrance animations */
+  .hero-actions {
+    opacity: 0;
+    animation: hero-fade-in 0.7s ease 1.2s forwards;
+  }
+  .hero-title-line {
+    display: block;
+    opacity: 0;
+    animation: hero-title-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .hero-title-first {
+    animation-delay: 0.15s;
+  }
+
+  .hero-title-second {
+    animation-delay: 0.32s;
+  }
+
+  .hero-eyebrow {
+    opacity: 0;
+    animation: hero-fade-in 0.7s ease 0.05s forwards;
+  }
+
+  .hero-subtitle {
+    opacity: 0;
+    animation: hero-fade-in 0.8s ease 0.95s forwards;
+  }
+
+  /* Subtle EVA-inspired orange accent */
+  .hero-accent {
+    width: min(260px, 55%);
+    height: 2px;
+    margin: 1.5rem auto -0.25rem;
+    background: #df6335;
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: hero-line-in 0.6s ease-out 0.75s forwards;
+  }
+
+  @keyframes hero-title-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+      filter: blur(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes hero-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes hero-line-in {
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+
+  /* Accessibility: disable animations when requested */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-title-line,
+    .hero-eyebrow,
+    .hero-subtitle,
+    .hero-accent,
+    .hero-actions {
+      animation: none;
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+  }
+
+
 </style>
