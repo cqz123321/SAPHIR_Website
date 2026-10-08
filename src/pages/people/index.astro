@@ -5,18 +5,19 @@ import PersonGroup from "../../components/PersonGroup.astro";
 import { getGroupedPeople } from "../../lib/content";
 
 const groups = await getGroupedPeople();
+const groupLabels: Record<string, string> = { Faculty: "Principal Investigator", Researchers: "Postdoctoral Researchers", Students: "PhD Students" };
 ---
 
 <BaseLayout
   title="People"
-  description="Faculty, researchers, and alumni of the lab."
+  description="Meet the SAPHIR soft robotics team at Queen Mary University of London."
 >
   <PageHeader
     eyebrow="The team"
     title="People"
-    lead="The faculty, researchers, and alumni who make up the lab."
+    lead="Our principal investigator, postdoctoral researchers, and PhD students."
   />
   <div class="container-page py-12">
-    {groups.map((g) => <PersonGroup title={g.group} people={g.people} />)}
+    {groups.map((g) => <PersonGroup title={groupLabels[g.group] ?? g.group} people={g.people} />)}
   </div>
 </BaseLayout>

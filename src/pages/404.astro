@@ -1,4 +1,5 @@
 ---
+import { withBase } from "../lib/urls";
 import BaseLayout from "../components/BaseLayout.astro";
 ---
 
@@ -11,7 +12,7 @@ import BaseLayout from "../components/BaseLayout.astro";
       site rebuild.
     </p>
     <a
-      href="/"
+      href={withBase("/")}
       class="mt-8 rounded-md bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
       >Back to home</a
     >

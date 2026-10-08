@@ -1,4 +1,5 @@
 ---
+import { withBase } from "../lib/urls";
 import { Image } from "astro:assets";
 import BaseLayout from "../components/BaseLayout.astro";
 import { site } from "../data/site";
@@ -84,12 +85,12 @@ const themes = [
         <p class="mx-auto mt-6 max-w-2xl text-lg text-slate-600">{site.description}</p>
         <div class="mt-8 flex flex-wrap justify-center gap-3">
           <a
-            href="/research"
+            href={withBase("/research")}
             class="rounded-md bg-primary-700 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
             >Explore our research</a
           >
           <a
-            href="/people"
+            href={withBase("/people")}
             class="rounded-md border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
             >Meet the team</a
           >
@@ -112,7 +113,7 @@ const themes = [
               <h2 class="font-serif text-2xl text-slate-900">From our work</h2>
             </div>
             <a
-              href="/figures"
+              href={withBase("/figures")}
               class="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary-700 transition-colors hover:text-accent-600"
             >
               All figures
@@ -127,7 +128,7 @@ const themes = [
           <div class="grid gap-5 sm:grid-cols-3">
             {strip.map(({ figure, paper }) => (
               <a
-                href="/figures"
+                href={withBase("/figures")}
                 class="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md"
               >
                 <div class="overflow-hidden bg-slate-50">
@@ -167,7 +168,7 @@ const themes = [
       {
         themes.map((t) => (
           <a
-            href={t.href}
+            href={withBase(t.href)}
             class="group rounded-xl border border-slate-200 p-6 transition-colors hover:border-primary-300 hover:bg-primary-50/40"
           >
             <h3 class="font-serif text-xl text-slate-900 group-hover:text-primary-700">
@@ -191,7 +192,7 @@ const themes = [
               <h2 class="font-serif text-2xl text-slate-900">Recent work</h2>
             </div>
             <a
-              href="/publications"
+              href={withBase("/publications")}
               class="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary-700 transition-colors hover:text-accent-600"
             >
               All publications
@@ -222,7 +223,7 @@ const themes = [
             <code>src/content/gallery/</code>.
           </p>
           <a
-            href="/lab-life"
+            href={withBase("/lab-life")}
             class="group mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary-700 transition-colors hover:text-accent-600"
           >
             Explore lab life
@@ -233,7 +234,7 @@ const themes = [
           </a>
         </div>
         <a
-          href="/lab-life"
+          href={withBase("/lab-life")}
           class="group block overflow-hidden rounded-2xl border border-slate-200 shadow-sm"
         >
           <Image

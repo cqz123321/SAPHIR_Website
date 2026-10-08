@@ -181,7 +181,7 @@ export function publicationsForPerson(person: Person, pubs: Publication[]) {
 // the people listed here (typically the PI and senior faculty/collaborators).
 // Use each person's slug = their markdown filename without ".md".
 // ⚙️  CUSTOMIZE: list your PI (and any senior faculty) here.
-export const NON_MENTEE_SLUGS = new Set(["jane-doe"]);
+export const NON_MENTEE_SLUGS = new Set(["k-althoefer"]);
 
 /** Build an `isMentee(authorString)` predicate from the people collection. */
 export function menteeMatcher(people: Person[]) {

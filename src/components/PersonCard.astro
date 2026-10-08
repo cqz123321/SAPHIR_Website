@@ -1,4 +1,5 @@
 ---
+import { withBase } from "../lib/urls";
 import { Image } from "astro:assets";
 import type { Person } from "../lib/content";
 
@@ -35,7 +36,7 @@ const badges = [
 ---
 
 <div class="text-center">
-  <a href={`/people/${person.id}`} class="group block">
+  <a href={withBase(`/people/${person.id}`)} class="group block">
     <div
       class="mx-auto h-32 w-32 overflow-hidden rounded-full ring-1 ring-slate-200 transition duration-300 group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary-300"
     >

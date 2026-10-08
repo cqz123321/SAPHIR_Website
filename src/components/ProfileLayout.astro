@@ -1,4 +1,5 @@
 ---
+import { withBase } from "../lib/urls";
 import { Image } from "astro:assets";
 import BaseLayout from "./BaseLayout.astro";
 import type { Person } from "../lib/content";
@@ -60,7 +61,7 @@ const ICONS: Record<LinkType, { d: string; color?: string }> = {
   <header class="bg-gradient-to-b from-primary-50 to-white">
     <div class="container-page py-10">
       <a
-        href="/people"
+        href={withBase("/people")}
         class="group inline-flex items-center gap-1 text-sm font-medium text-primary-700 transition-colors hover:text-accent-600"
       >
         <span class="transition-transform group-hover:-translate-x-0.5" aria-hidden="true">&larr;</span>

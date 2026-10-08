@@ -1,4 +1,5 @@
 ---
+import { withBase } from "../lib/urls";
 import { site } from "../data/site";
 
 interface Props {
@@ -17,7 +18,7 @@ const {
 const pageTitle = title ? `${title} · ${site.shortName}` : site.name;
 const base = Astro.site ?? new URL(site.url);
 const canonical = new URL(Astro.url.pathname, base).href;
-const ogImage = new URL(image, base).href;
+const ogImage = new URL(withBase(image), base).href;
 ---
 
 <meta charset="utf-8" />
@@ -31,10 +32,10 @@ const ogImage = new URL(image, base).href;
 
 <!-- If you change the favicon later, append ?v=2 (then ?v=3 …) to these URLs to
      force browsers to re-fetch it past their sticky favicon cache. -->
-<link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="icon" href={withBase("/favicon.ico")} sizes="any" />
+<link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
+<link rel="icon" type="image/png" sizes="32x32" href={withBase("/favicon-32.png")} />
+<link rel="apple-touch-icon" sizes="180x180" href={withBase("/apple-touch-icon.png")} />
 
 <!-- Open Graph -->
 <meta property="og:type" content="website" />
