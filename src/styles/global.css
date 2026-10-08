@@ -20,23 +20,36 @@
   --color-primary-900: #0d3252;
   --color-primary-950: #08213a;
 
-  /* ---- Brain-motif pink / magenta accent ---- */
-  --color-accent-50: #fdeff8;
-  --color-accent-100: #fbdcef;
-  --color-accent-200: #f6b9df;
-  --color-accent-300: #ef8bc8;
-  --color-accent-400: #e65bad;
-  --color-accent-500: #d6409f;
-  --color-accent-600: #b92d85;
-  --color-accent-700: #97226b;
-  --color-accent-800: #7c1f59;
-  --color-accent-900: #681d4b;
+  /* ---- Signal orange accent (used sparingly: rules, indices, highlights) ---- */
+  --color-accent-50: #fdf3ee;
+  --color-accent-100: #fbe3d6;
+  --color-accent-200: #f6c4aa;
+  --color-accent-300: #f0a07a;
+  --color-accent-400: #e87d52;
+  --color-accent-500: #df6335;
+  --color-accent-600: #c64f24;
+  --color-accent-700: #a33e1d;
+  --color-accent-800: #84341c;
+  --color-accent-900: #6c2d1a;
 
   /* ---- Typography (loaded via @fontsource-variable in BaseLayout) ---- */
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-serif: "Newsreader Variable", ui-serif, Georgia, Cambria,
     "Times New Roman", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo,
+    Consolas, "Liberation Mono", monospace;
+  /* Title face. The bundled file is a subset: it only contains the glyphs
+     A B C H I O P R S T and space — enough for "SAPHIR ROBOTICS". */
+  --font-matisse: "SAPHIR Matisse", "Times New Roman", serif;
+}
+
+@font-face {
+  font-family: "SAPHIR Matisse";
+  src: url("../assets/fonts/matisse-title.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
 }
 
 @layer base {
@@ -68,6 +81,14 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-primary-500;
   }
+}
+
+/* Small technical label: "01 — About". */
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* Reusable layout helper: centered content column. */

@@ -1,0 +1,302 @@
+---
+/*
+  ResearchPlate — a small animated line drawing ("technical plate") for one
+  research direction on the homepage. Hand-authored inline SVG, no assets.
+
+    kind="soft"     an everting soft robot growing between two obstacles
+    kind="tactile"  a hexagonal taxel array with a moving contact + row profile
+    kind="arm"      a manipulator reaching down to an object, with a sensor's view
+
+  To use a real photo instead, swap <ResearchPlate> for an <Image> in index.astro.
+*/
+interface Props {
+  kind: "soft" | "tactile" | "arm";
+  index: number;
+  tag: string;
+}
+const { kind, index, tag } = Astro.props;
+const id = `plate-${kind}`;
+const fig = `FIG.${String(index).padStart(2, "0")}`;
+
+// Taxel grid for the tactile plate (pointy-top hexes).
+const R = 13;
+const hw = Math.sqrt(3) * R;
+const hexD = (() => {
+  const r = R - 1.6;
+  const pts = Array.from({ length: 6 }, (_, k) => {
+    const a = (Math.PI / 3) * k + Math.PI / 6;
+    return `${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`;
+  });
+  return `M${pts.join("L")}Z`;
+})();
+const taxels: { x: number; y: number; row: number; col: number }[] = [];
+for (let j = 0; j < 8; j++)
+  for (let i = 0; i < 9; i++)
+    taxels.push({ x: 44 + i * hw + (j % 2 ? hw / 2 : 0), y: 72 + j * 1.5 * R, row: j, col: i });
+const C0 = { x: 128, y: 140 };
+const p0 = (t: { x: number; y: number }) =>
+  Math.exp(-((t.x - C0.x) ** 2 + (t.y - C0.y) ** 2) / (2 * 30 * 30));
+const PROFILE_ROW = 3;
+---
+
+<figure class="plate" data-plate={kind}>
+  <svg viewBox="0 0 400 280" role="img" aria-label={`Illustration: ${tag.toLowerCase()}`}>
+    <defs>
+      <pattern id={`${id}-dots`} width="20" height="20" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.7" fill="#ffffff" fill-opacity="0.09"></circle>
+      </pattern>
+      <pattern id={`${id}-hatch`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="5" stroke="#5c5c5c" stroke-width="1"></line>
+      </pattern>
+    </defs>
+
+    <rect width="400" height="280" fill={`url(#${id}-dots)`}></rect>
+
+    <!-- frame: corner ticks, labels, scale bar -->
+    <g class="frame" fill="none" stroke="#6b6b6b" stroke-width="1">
+      <path d="M10 22V10H22M378 10H390V22M390 258V270H378M22 270H10V258"></path>
+    </g>
+    <text x="22" y="30" class="t">{fig}</text>
+    <text x="378" y="30" class="t" text-anchor="end">{tag}</text>
+    <g stroke="#8c8c8c" stroke-width="1">
+      <path d="M22 256H82M22 252V260M52 254V258M82 252V260"></path>
+    </g>
+    <text x="90" y="259" class="t">20 MM</text>
+
+    {kind === "soft" && (
+      <g>
+        <defs>
+          <path id={`${id}-path`} d="M80 180 C140 180 150 110 215 110 S300 175 352 120"></path>
+          <mask id={`${id}-grow`} maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="280">
+            <path d="M80 180 C140 180 150 110 215 110 S300 175 352 120" pathLength="1"
+              fill="none" stroke="#fff" stroke-width="34" stroke-dasharray="1 1" stroke-dashoffset="1">
+              <animate attributeName="stroke-dashoffset" values="1;0;0" keyTimes="0;0.6;1" dur="7s"
+                calcMode="spline" keySplines="0.45 0 0.25 1;0 0 1 1" repeatCount="indefinite"></animate>
+            </path>
+          </mask>
+        </defs>
+
+        <!-- obstacles -->
+        <circle cx="150" cy="226" r="30" fill={`url(#${id}-hatch)`} stroke="#5c5c5c"></circle>
+        <circle cx="300" cy="80" r="26" fill={`url(#${id}-hatch)`} stroke="#5c5c5c"></circle>
+
+        <!-- base with spool + pressure inlet -->
+        <rect x="24" y="148" width="56" height="64" rx="3" fill="#0f0f0f" stroke="#d4d4d4"></rect>
+        <circle cx="50" cy="180" r="15" fill="none" stroke="#8c8c8c"></circle>
+        <circle cx="50" cy="180" r="3" fill="#8c8c8c"></circle>
+        <path d="M4 200H22M16 196L22 200L16 204" fill="none" stroke="#df6335"></path>
+        <text x="24" y="232" class="t">BASE · P</text>
+
+        <!-- body grows in, holds, fades, repeats -->
+        <g mask={`url(#${id}-grow)`}>
+          <use href={`#${id}-path`} fill="none" stroke="#d4d4d4" stroke-width="22"></use>
+          <use href={`#${id}-path`} fill="none" stroke="#0f0f0f" stroke-width="19.5"></use>
+          <use href={`#${id}-path`} fill="none" stroke="#df6335" stroke-width="1.2" stroke-dasharray="3 7" class="flow"></use>
+        </g>
+        <!-- everting tip -->
+        <g>
+          <circle r="10.5" fill="#0f0f0f" stroke="#d4d4d4" stroke-width="1.2"></circle>
+          <circle r="2.6" fill="#df6335"></circle>
+          <animateMotion dur="7s" keyPoints="0;1;1" keyTimes="0;0.6;1" calcMode="spline"
+            keySplines="0.45 0 0.25 1;0 0 1 1" repeatCount="indefinite">
+            <mpath href={`#${id}-path`}></mpath>
+          </animateMotion>
+        </g>
+        <path d="M356 106L368 64H382" fill="none" stroke="#6b6b6b"></path>
+        <text x="378" y="60" class="t" text-anchor="end">TIP GROWTH</text>
+      </g>
+    )}
+
+    {kind === "tactile" && (
+      <g>
+        <rect x="24" y="50" width="222" height="196" rx="10" fill="none" stroke="#5c5c5c"></rect>
+        <g class="taxels">
+          {taxels.map((t) => {
+            const p = p0(t);
+            return (
+              <path
+                d={hexD}
+                transform={`translate(${t.x.toFixed(2)} ${t.y.toFixed(2)})`}
+                data-x={t.x.toFixed(2)}
+                data-y={t.y.toFixed(2)}
+                data-row={t.row}
+                data-col={t.col}
+                fill="#df6335"
+                fill-opacity={(p * 0.85).toFixed(3)}
+                stroke="#d4d4d4"
+                stroke-opacity={(0.22 + p * 0.6).toFixed(3)}
+              />
+            );
+          })}
+        </g>
+        <g class="contact" transform={`translate(${C0.x} ${C0.y})`} fill="none" stroke="#df6335">
+          <circle r="20" stroke-opacity="0.9"></circle>
+          <circle r="38" stroke-opacity="0.5" stroke-dasharray="2 4"></circle>
+          <circle r="56" stroke-opacity="0.25" stroke-dasharray="2 4"></circle>
+          <path d="M-5 0H5M0 -5V5" stroke="#fff"></path>
+        </g>
+        <!-- row profile -->
+        <path d={`M24 ${72 + PROFILE_ROW * 1.5 * R}h-8`} stroke="#df6335"></path>
+        <g transform="translate(266 70)">
+          <path d="M0 0V160H118" fill="none" stroke="#6b6b6b"></path>
+          <text x="4" y="8" class="t">F</text>
+          <text x="118" y="174" class="t" text-anchor="end">ROW 04</text>
+          <g class="bars">
+            {taxels.filter((t) => t.row === PROFILE_ROW).map((t, k) => {
+              const h = p0(t) * 140;
+              return <rect x={6 + k * 12.4} y={160 - h} width="7" height={h} fill="#d4d4d4" data-col={t.col} />;
+            })}
+          </g>
+        </g>
+      </g>
+    )}
+
+    {kind === "arm" && (
+      <g>
+        <!-- ground -->
+        <path d="M24 240H376" stroke="#8c8c8c"></path>
+        <path d="M30 240l-6 8M50 240l-6 8M70 240l-6 8M90 240l-6 8M110 240l-6 8M130 240l-6 8M150 240l-6 8M170 240l-6 8M190 240l-6 8M210 240l-6 8M230 240l-6 8M250 240l-6 8M270 240l-6 8M290 240l-6 8M310 240l-6 8M330 240l-6 8M350 240l-6 8M370 240l-6 8" stroke="#4a4a4a"></path>
+
+        <!-- base frame {B} -->
+        <g transform="translate(34 226)" stroke="#8c8c8c" fill="none">
+          <path d="M0 0H20M16 -3L20 0L16 3"></path>
+          <path d="M0 0V-20M-3 -16L0 -20L3 -16"></path>
+        </g>
+        <text x="38" y="196" class="t">&#123;B&#125;</text>
+
+        <!-- object + planned approach -->
+        <ellipse cx="188" cy="232" rx="13" ry="8" fill="#df6335" fill-opacity="0.18" stroke="#df6335"></ellipse>
+        <path d="M184 160C186 185 187 205 187 218" fill="none" stroke="#df6335" stroke-dasharray="3 4"></path>
+        <g stroke="#df6335" fill="none">
+          <circle cx="188" cy="232" r="20" stroke-opacity="0.45"></circle>
+          <path d="M160 232h8M208 232h8"></path>
+        </g>
+        <text x="218" y="222" class="t">TARGET</text>
+
+        <!-- sensor + field of view -->
+        <rect x="318" y="58" width="26" height="16" rx="2" fill="#0f0f0f" stroke="#d4d4d4"></rect>
+        <circle cx="331" cy="66" r="4" fill="none" stroke="#d4d4d4"></circle>
+        <path d="M322 74L176 226M340 74L204 230" stroke="#6b6b6b" stroke-dasharray="1 4"></path>
+        <text x="378" y="92" class="t" text-anchor="end">D = <tspan class="range">0.42</tspan> M</text>
+
+        <!-- manipulator: three nested revolute joints -->
+        <path d="M70 240L76 222H104L110 240Z" fill="#0f0f0f" stroke="#d4d4d4"></path>
+        <g transform="translate(90 222)">
+          <g>
+            <animateTransform attributeName="transform" type="rotate" values="-8;14;-8" keyTimes="0;0.5;1"
+              dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
+            <rect x="-6" y="-85" width="12" height="85" rx="6" fill="#0f0f0f" stroke="#d4d4d4"></rect>
+            <circle r="8" fill="#0f0f0f" stroke="#d4d4d4"></circle>
+            <circle r="2" fill="#d4d4d4"></circle>
+            <g transform="translate(0 -85)">
+              <g>
+                <animateTransform attributeName="transform" type="rotate" values="10;35;10" keyTimes="0;0.5;1"
+                  dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
+                <rect x="0" y="-5" width="75" height="10" rx="5" fill="#0f0f0f" stroke="#d4d4d4"></rect>
+                <circle r="7" fill="#0f0f0f" stroke="#d4d4d4"></circle>
+                <circle r="2" fill="#d4d4d4"></circle>
+                <g transform="translate(75 0)">
+                  <g>
+                    <animateTransform attributeName="transform" type="rotate" values="40;0;40" keyTimes="0;0.5;1"
+                      dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
+                    <rect x="0" y="-4" width="26" height="8" rx="4" fill="#0f0f0f" stroke="#d4d4d4"></rect>
+                    <circle r="6" fill="#0f0f0f" stroke="#d4d4d4"></circle>
+                    <path d="M26 -7V7M26 -7H36M26 7H36" fill="none" stroke="#d4d4d4"></path>
+                    <circle cx="31" cy="0" r="1.8" fill="#df6335"></circle>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+      </g>
+    )}
+  </svg>
+</figure>
+
+<script>
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  document.querySelectorAll<HTMLElement>("figure.plate").forEach((fig) => {
+    const svg = fig.querySelector("svg") as SVGSVGElement | null;
+    if (!svg) return;
+    // SMIL ignores prefers-reduced-motion, so pause it ourselves; also pause off-screen.
+    if (reduce) {
+      svg.setCurrentTime(4.2); // a "grown" frame, so nothing is left half-drawn
+      svg.pauseAnimations();
+    }
+    let visible = false;
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (reduce) return;
+      visible ? svg.unpauseAnimations() : svg.pauseAnimations();
+    }).observe(fig);
+
+    if (fig.dataset.plate === "tactile" && !reduce) {
+      const cells = [...svg.querySelectorAll<SVGPathElement>(".taxels path")].map((el) => ({
+        el,
+        x: +el.dataset.x!,
+        y: +el.dataset.y!,
+        row: +el.dataset.row!,
+        col: +el.dataset.col!,
+      }));
+      const bars = [...svg.querySelectorAll<SVGRectElement>(".bars rect")];
+      const contact = svg.querySelector<SVGGElement>(".contact");
+      const s2 = 2 * 30 * 30;
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        if (visible) {
+          const t = (now - t0) / 1000;
+          const cx = 132 + 52 * Math.sin(t * 0.55);
+          const cy = 146 + 36 * Math.sin(t * 0.83 + 0.6);
+          contact?.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+          for (const c of cells) {
+            const p = Math.exp(-((c.x - cx) ** 2 + (c.y - cy) ** 2) / s2);
+            c.el.setAttribute("fill-opacity", (p * 0.85).toFixed(3));
+            c.el.setAttribute("stroke-opacity", (0.22 + p * 0.6).toFixed(3));
+            if (c.row === 3 && bars[c.col]) {
+              const h = p * 140;
+              bars[c.col].setAttribute("y", (160 - h).toFixed(1));
+              bars[c.col].setAttribute("height", h.toFixed(1));
+            }
+          }
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+  });
+</script>
+
+<style>
+  .plate {
+    margin: 0;
+    background: #0f0f0f;
+    aspect-ratio: 400 / 280;
+    overflow: hidden;
+  }
+  .plate svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .plate :global(.t) {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.12em;
+    fill: #8c8c8c;
+  }
+  .plate :global(.flow) {
+    animation: plate-flow 0.9s linear infinite;
+  }
+  @keyframes plate-flow {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plate :global(.flow) {
+      animation: none;
+    }
+  }
+</style>
