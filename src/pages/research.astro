@@ -3,7 +3,7 @@ import { withBase } from "../lib/urls";
 import BaseLayout from "../components/BaseLayout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import PubList from "../components/PubList.astro";
-import ResearchPlate from "../components/ResearchPlate.astro";
+import ResearchConsole from "../components/ResearchConsole.astro";
 import { getResearchGroups, getPublications } from "../lib/content";
 
 // The three research directions (same as the homepage, with more detail).
@@ -17,6 +17,7 @@ const directions = [
       "One example is the everting robot, which grows from its tip. Because its body does not slide against its surroundings, it can move through narrow and delicate places, such as passages inside the human body.",
     ],
     keys: ["Eversion", "Continuum robots", "Compliant actuation"],
+    card: ["Soft bodies", "that grow from the tip"],
   },
   {
     title: "Sensing & interaction",
@@ -27,6 +28,7 @@ const directions = [
       "This contact information helps robots handle objects gently, recognise what they are touching, and work safely next to people.",
     ],
     keys: ["Tactile sensing", "Sensing skins", "Haptic perception"],
+    card: ["A sense of touch", "where, and how hard"],
   },
   {
     title: "Robot autonomy",
@@ -37,6 +39,7 @@ const directions = [
       "This covers reaching and grasping, moving through cluttered spaces, and modelling how a tool interacts with its environment.",
     ],
     keys: ["Modelling", "Navigation", "Manipulation"],
+    card: ["Moving on its own", "sense, decide, reach"],
   },
 ] as const;
 
@@ -66,7 +69,7 @@ const total = (await getPublications()).length;
       {directions.map((d, i) => (
         <section class="dir grid items-center gap-10 lg:grid-cols-2 lg:gap-16" id={d.plate}>
           <div class:list={[i % 2 === 1 && "lg:order-2"]}>
-            <ResearchPlate kind={d.plate} index={i + 1} tag={d.tag} detail />
+            <ResearchConsole kind={d.plate} index={i + 1} tag={d.tag} keys={d.keys} card={d.card} />
           </div>
           <div>
             <p class="label-mono text-accent-600">0{i + 1} — Direction</p>

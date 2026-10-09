@@ -49,6 +49,11 @@ const C0 = { x: 128, y: 140 };
 const p0 = (t: { x: number; y: number }) =>
   Math.exp(-((t.x - C0.x) ** 2 + (t.y - C0.y) ** 2) / (2 * 30 * 30));
 const PROFILE_ROW = 3;
+const hexPath = (r: number) =>
+  "M" + Array.from({ length: 6 }, (_, k) => {
+    const a = (Math.PI / 3) * k;
+    return `${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`;
+  }).join("L") + "Z";
 ---
 
 <figure class:list={["plate", detail && "plate-detail"]} data-plate={kind} data-zoom={detail ? ZOOM : undefined}>
@@ -56,6 +61,10 @@ const PROFILE_ROW = 3;
     <defs>
       <pattern id={`${id}-dots`} width="20" height="20" patternUnits="userSpaceOnUse">
         <circle cx="1" cy="1" r="0.7" fill="#ffffff" fill-opacity="0.09"></circle>
+      </pattern>
+      <pattern id={`${id}-haz`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="6" height="6" fill="#0f0f0f"></rect>
+        <rect width="3" height="6" fill="#df6335"></rect>
       </pattern>
       <pattern id={`${id}-hatch`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
         <line x1="0" y1="0" x2="0" y2="5" stroke="#5c5c5c" stroke-width="1"></line>
@@ -104,6 +113,7 @@ const PROFILE_ROW = 3;
         <circle cx="50" cy="180" r="3" fill="#8c8c8c"></circle>
         <path d="M4 200H22M16 196L22 200L16 204" fill="none" stroke="#df6335"></path>
         <text x="24" y="232" class="t">BASE · P</text>
+        {detail && <rect x="24" y="214" width="56" height="4" fill={`url(#${id}-haz)`}></rect>}
         {detail && (
           <g class="micro" font-size="3" fill="#8c8c8c" letter-spacing="0.3">
             <text x="50" y="199" text-anchor="middle">SPOOLED BODY</text>
@@ -143,6 +153,18 @@ const PROFILE_ROW = 3;
             <mpath href={`#${id}-path`}></mpath>
           </animateMotion>
         </g>
+        {detail && (
+          <g transform="translate(352 120)" fill="none" stroke="#df6335">
+            <path d={hexPath(14)}>
+              <animateTransform attributeName="transform" type="scale" values="1;1;2.4;2.4" keyTimes="0;0.6;0.78;1" dur="7s" repeatCount="indefinite"></animateTransform>
+              <animate attributeName="stroke-opacity" values="0;0;0.9;0;0" keyTimes="0;0.599;0.6;0.78;1" dur="7s" repeatCount="indefinite"></animate>
+            </path>
+            <path d={hexPath(14)} stroke-width="0.6">
+              <animateTransform attributeName="transform" type="scale" values="1;1;1;1.7;1.7" keyTimes="0;0.6;0.64;0.82;1" dur="7s" repeatCount="indefinite"></animateTransform>
+              <animate attributeName="stroke-opacity" values="0;0;0.7;0;0" keyTimes="0;0.639;0.64;0.82;1" dur="7s" repeatCount="indefinite"></animate>
+            </path>
+          </g>
+        )}
         <path d="M356 106L368 64H382" fill="none" stroke="#6b6b6b"></path>
         <text x="378" y="60" class="t" text-anchor="end">TIP GROWTH</text>
       </g>
@@ -187,6 +209,13 @@ const PROFILE_ROW = 3;
           <circle r="56" stroke-opacity="0.25" stroke-dasharray="2 4"></circle>
           <path d="M-5 0H5M0 -5V5" stroke="#fff"></path>
           {detail && <text x="22" y="-16" font-size="3" fill="#df6335" stroke="none" letter-spacing="0.3">CONTACT · PEAK</text>}
+          {detail && (
+            <g class="ripple" stroke-width="0.8">
+              <path d={hexPath(16)}></path>
+              <path d={hexPath(16)}></path>
+              <path d={hexPath(16)}></path>
+            </g>
+          )}
         </g>
         <!-- row profile -->
         <path d={`M24 ${72 + PROFILE_ROW * 1.5 * R}h-8`} stroke="#df6335"></path>
@@ -225,6 +254,21 @@ const PROFILE_ROW = 3;
           <path d="M160 232h8M208 232h8"></path>
         </g>
         <text x="218" y="222" class="t">TARGET</text>
+        {detail && (
+          <g transform="translate(188 232)" fill="none" stroke="#df6335" stroke-width="1.2">
+            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.42;0.425;0.57;0.6;1" dur="8s" repeatCount="indefinite"></animate>
+            <g>
+              <animateTransform attributeName="transform" type="scale" values="2;2;1;1" keyTimes="0;0.42;0.47;1" dur="8s" repeatCount="indefinite"></animateTransform>
+              <g>
+                <animateTransform attributeName="transform" type="rotate" values="0;0;45;45" keyTimes="0;0.42;0.47;1" dur="8s" repeatCount="indefinite"></animateTransform>
+                <path d="M-17 -11V-17H-11M11 -17H17V-11M17 11V17H11M-11 17H-17V11"></path>
+              </g>
+            </g>
+            <text x="22" y="-13" font-size="5" fill="#df6335" stroke="none" letter-spacing="0.6" class="t-lock">LOCK
+              <animate attributeName="fill-opacity" values="1;0;1" dur="0.3s" repeatCount="indefinite"></animate>
+            </text>
+          </g>
+        )}
         {detail && (
           <g class="micro" font-size="3" fill="#a3a3a3" letter-spacing="0.3">
             <text x="188" y="233" text-anchor="middle" fill="#df6335">SOFT OBJECT</text>
@@ -311,7 +355,6 @@ const PROFILE_ROW = 3;
         </g>
       </g>
     )}
-    {detail && <text x="378" y="259" class="t loupe-hint" text-anchor="end">HOVER TO MAGNIFY</text>}
   </svg>
 </figure>
 
@@ -374,15 +417,26 @@ const PROFILE_ROW = 3;
       const barSets = [...svg.querySelectorAll<SVGGElement>(".bars")].map((g) => [...g.querySelectorAll<SVGRectElement>("rect")]);
       const contacts = [...svg.querySelectorAll<SVGGElement>(".contact")];
       const s2 = 2 * 30 * 30;
+      const live = fig.classList.contains("plate-detail"); // Research page: the finger presses and lifts
+      const state = { amp: 1, peak: 0, active: 0 };
+      (fig as any).plateState = state;
       const t0 = performance.now();
       const tick = (now: number) => {
         if (visible) {
           const t = (now - t0) / 1000;
           const cx = 132 + 52 * Math.sin(t * 0.55);
           const cy = 146 + 36 * Math.sin(t * 0.83 + 0.6);
-          for (const c of contacts) c.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+          const amp = live ? Math.min(1, Math.max(0, 0.45 + 0.8 * Math.sin(t * 0.9))) : 1;
+          for (const c of contacts) {
+            c.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+            if (live) c.setAttribute("opacity", Math.min(1, amp * 1.6).toFixed(2));
+          }
+          let peak = 0;
+          let on = 0;
           for (const c of cells) {
-            const p = Math.exp(-((c.x - cx) ** 2 + (c.y - cy) ** 2) / s2);
+            const p = amp * Math.exp(-((c.x - cx) ** 2 + (c.y - cy) ** 2) / s2);
+            if (p > peak) peak = p;
+            if (p > 0.25) on++;
             c.el.setAttribute("fill-opacity", (p * 0.85).toFixed(3));
             c.el.setAttribute("stroke-opacity", (0.22 + p * 0.6).toFixed(3));
             if (c.row === 3) {
@@ -393,6 +447,9 @@ const PROFILE_ROW = 3;
               }
             }
           }
+          state.amp = amp;
+          state.peak = peak;
+          state.active = Math.round(on / Math.max(1, barSets.length)); // the magnifier holds a second copy
         }
         requestAnimationFrame(tick);
       };
@@ -431,8 +488,27 @@ const PROFILE_ROW = 3;
   .plate.is-zooming .loupe {
     opacity: 1;
   }
-  .plate.is-zooming .loupe-hint {
-    opacity: 0;
+  .plate :global(.ripple path) {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: plate-ripple 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+    stroke-opacity: 0;
+  }
+  .plate :global(.ripple path:nth-child(2)) {
+    animation-delay: 0.8s;
+  }
+  .plate :global(.ripple path:nth-child(3)) {
+    animation-delay: 1.6s;
+  }
+  @keyframes plate-ripple {
+    0% {
+      transform: scale(0.8);
+      stroke-opacity: 0.9;
+    }
+    100% {
+      transform: scale(3.6);
+      stroke-opacity: 0;
+    }
   }
   .plate :global(.flow) {
     animation: plate-flow 0.9s linear infinite;

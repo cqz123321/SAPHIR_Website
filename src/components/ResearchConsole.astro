@@ -1,0 +1,570 @@
+---
+/*
+  ResearchConsole — the Research-page frame around a detailed ResearchPlate.
+
+    • a title card (heavy serif on black) that cuts in once when the plate first
+      scrolls into view, then cuts away to the drawing
+    • a header strip with hazard tape and the magnifier hint, and a vertical rail
+      with the direction's keywords
+    • a row of live read-outs that follow the drawing:
+        soft     time to full length (LCD countdown), body length, internal pressure
+        tactile  peak force (LCD), active taxels / contact state, force history
+        arm      distance to target (LCD), and a three-way grasp vote (vision ·
+                 touch · planner) that approves when all three agree
+
+  The numbers are illustrative — they are driven by the animation, not real data.
+*/
+import ResearchPlate from "./ResearchPlate.astro";
+
+interface Props {
+  kind: "soft" | "tactile" | "arm";
+  index: number;
+  tag: string;
+  keys: readonly string[];
+  card: readonly [string, string];
+}
+const { kind, index, tag, keys, card } = Astro.props;
+const nn = String(index).padStart(2, "0");
+---
+
+<div class="console" data-console={kind}>
+  <div class="con-head">
+    <span class="haz" aria-hidden="true"></span>
+    <button type="button" class="con-no" data-replay data-sfx="tick" title="Replay title card">DIRECTION {nn}</button>
+    <span class="con-rule" aria-hidden="true"></span>
+    <span class="con-hint">Hover to magnify ×2.5</span>
+  </div>
+
+  <div class="con-body">
+    <div class="con-rail" aria-hidden="true">
+      <span>{keys.join(" · ")}</span>
+    </div>
+    <div class="con-plate">
+      <ResearchPlate kind={kind} index={index} tag={tag} detail />
+      <div class="scan" aria-hidden="true"></div>
+      <div class="card" aria-hidden="true">
+        <p class="card-no">DIRECTION:{index}</p>
+        <p class="card-big">{card[0]}</p>
+        <p class="card-sub">{card[1]}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="con-foot">
+    {kind === "soft" && (
+      <>
+        <div class="cell">
+          <p class="lab">Time to full length</p>
+          <p class="lcd"><span class="ghost">88:88.88</span><span data-o="count">00:04.20</span></p>
+        </div>
+        <div class="cell">
+          <p class="lab">Body length</p>
+          <p class="val"><span data-o="len">000</span> <small>mm</small></p>
+          <div class="bar"><span data-o="lenbar"></span></div>
+        </div>
+        <div class="cell">
+          <p class="lab">Pressure · <span data-o="kpa">0.0</span> kPa</p>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none"><path d="M0 15H120" class="mid"></path><polyline data-o="trace"></polyline></svg>
+        </div>
+      </>
+    )}
+    {kind === "tactile" && (
+      <>
+        <div class="cell">
+          <p class="lab">Peak force</p>
+          <p class="lcd"><span class="ghost">8.88</span><span data-o="force">0.00</span><small> N</small></p>
+        </div>
+        <div class="cell">
+          <p class="lab">Active taxels</p>
+          <p class="val"><span data-o="active">00</span><small> / 72</small></p>
+          <p class="state" data-o="contact">No contact</p>
+        </div>
+        <div class="cell">
+          <p class="lab">Force history</p>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none"><path d="M0 29H120" class="mid"></path><polyline data-o="trace"></polyline></svg>
+        </div>
+      </>
+    )}
+    {kind === "arm" && (
+      <>
+        <div class="cell">
+          <p class="lab">Distance to target</p>
+          <p class="lcd"><span class="ghost">888</span><span data-o="dist">120</span><small> mm</small></p>
+        </div>
+        <div class="cell cell-wide">
+          <p class="lab">Grasp decision · <span data-o="verdict">pending 0/3</span></p>
+          <div class="votes">
+            {["Vision", "Planner", "Touch"].map((v, i) => (
+              <div class="vote" data-vote={i}>
+                <span class="v-no">{i + 1}</span>
+                <span class="v-name">{v}</span>
+                <span class="v-st">Wait</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+</div>
+
+<script>
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // cubic-bezier easing (matches the SMIL keySplines used by the drawings)
+  const bezier = (x1: number, y1: number, x2: number, y2: number) => (x: number) => {
+    const f = (t: number, a: number, b: number) => 3 * (1 - t) * (1 - t) * t * a + 3 * (1 - t) * t * t * b + t * t * t;
+    let lo = 0,
+      hi = 1,
+      t = x;
+    for (let i = 0; i < 18; i++) {
+      t = (lo + hi) / 2;
+      f(t, x1, x2) < x ? (lo = t) : (hi = t);
+    }
+    return f(t, y1, y2);
+  };
+  const growEase = bezier(0.45, 0, 0.25, 1);
+  const armEase = bezier(0.45, 0, 0.55, 1);
+  const pad = (n: number, w: number) => String(Math.max(0, Math.round(n))).padStart(w, "0");
+
+  document.querySelectorAll<HTMLElement>(".console").forEach((con) => {
+    const kind = con.dataset.console;
+    const fig = con.querySelector<HTMLElement>("figure.plate")!;
+    const svg = fig.querySelector("svg") as SVGSVGElement;
+    const o = (k: string) => con.querySelector<HTMLElement>(`[data-o="${k}"]`);
+    const trace = con.querySelector<SVGPolylineElement>('[data-o="trace"]');
+    const hist: number[] = [];
+    const push = (v: number) => {
+      hist.push(v);
+      if (hist.length > 90) hist.shift();
+      trace?.setAttribute("points", hist.map((y, i) => `${((i / 89) * 120).toFixed(1)},${(29 - y * 27).toFixed(1)}`).join(" "));
+    };
+
+    // Title card: cuts in once when the plate first comes into view (click the header to replay).
+    let cardTimer = 0;
+    const playCard = () => {
+      con.classList.remove("card-on");
+      void con.offsetWidth; // restart the animation
+      con.classList.add("card-on");
+      clearTimeout(cardTimer);
+      cardTimer = window.setTimeout(() => con.classList.remove("card-on"), 1500);
+    };
+    con.querySelector("[data-replay]")?.addEventListener("click", playCard);
+    let shown = false;
+    new IntersectionObserver(
+      ([e], obs) => {
+        if (!e.isIntersecting || shown) return;
+        shown = true;
+        obs.disconnect();
+        if (!reduce) playCard();
+      },
+      { threshold: 0.6 },
+    ).observe(con);
+
+    let visible = false;
+    new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(con);
+
+    const pathEl = svg.querySelector<SVGPathElement>(`#plate-soft-path`);
+    const fullMM = pathEl ? (pathEl.getTotalLength() * 20) / 60 : 110; // the scale bar is 60 units = 20 mm
+    const votes = [...con.querySelectorAll<HTMLElement>("[data-vote]")];
+    let last = 0;
+
+    const frame = (now: number) => {
+      requestAnimationFrame(frame);
+      if (!visible || now - last < 33) return;
+      last = now;
+      const T = svg.getCurrentTime();
+
+      if (kind === "soft") {
+        const u = (T % 7) / 7;
+        const growing = u < 0.6;
+        const prog = growing ? growEase(u / 0.6) : 1;
+        const left = growing ? (0.6 - u) * 7 : 0;
+        const s = Math.floor(left);
+        o("count")!.textContent = `00:${pad(s, 2)}.${pad((left - s) * 100, 2)}`;
+        con.classList.toggle("is-hold", !growing);
+        o("len")!.textContent = pad(prog * fullMM, 3);
+        o("lenbar")!.style.transform = `scaleX(${prog.toFixed(3)})`;
+        // pressure: ramps up, bumps while squeezing past each obstacle, drops to a holding value
+        const bump = (c: number) => Math.exp(-((prog - c) ** 2) / 0.004);
+        const kpa = growing ? Math.min(1, u / 0.04) * (13 + 4 * bump(0.3) + 3.5 * bump(0.68)) + Math.random() * 0.5 : 10 + Math.random() * 0.3;
+        o("kpa")!.textContent = kpa.toFixed(1);
+        push(kpa / 20);
+      }
+
+      if (kind === "tactile") {
+        const st = (fig as any).plateState ?? { amp: 0, peak: 0, active: 0 };
+        const force = st.peak * 2.6;
+        o("force")!.textContent = force.toFixed(2);
+        o("active")!.textContent = pad(st.active, 2);
+        const touching = st.active > 0;
+        o("contact")!.textContent = touching ? "Contact detected" : "No contact";
+        con.classList.toggle("is-contact", touching);
+        push(force / 2.8);
+      }
+
+      if (kind === "arm") {
+        const t8 = (T % 8) / 8;
+        const r = t8 < 0.5 ? armEase(t8 / 0.5) : armEase((1 - t8) / 0.5); // 0 = far, 1 = at the target
+        o("dist")!.textContent = pad(2 + 118 * (1 - r), 3);
+        const go = [r > 0.55, r > 0.8, r > 0.97];
+        votes.forEach((v, i) => {
+          v.classList.toggle("is-go", go[i]);
+          v.querySelector(".v-st")!.textContent = go[i] ? "Go" : "Wait";
+        });
+        const n = go.filter(Boolean).length;
+        o("verdict")!.textContent = n === 3 ? "approved 3/3" : `pending ${n}/3`;
+        con.classList.toggle("is-approved", n === 3);
+      }
+    };
+    requestAnimationFrame(frame);
+  });
+</script>
+
+<style>
+  .console {
+    --c-bg: #0b0b0b;
+    --c-line: #2b2b2b;
+    --c-dim: #7a7a76;
+    --c-or: #df6335;
+    background: var(--c-bg);
+    border: 1px solid var(--c-line);
+    color: #d4d4d4;
+    font-family: var(--font-mono);
+  }
+
+  /* header strip */
+  .con-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 2rem;
+    padding-right: 0.75rem;
+    border-bottom: 1px solid var(--c-line);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .haz {
+    align-self: stretch;
+    width: 3.25rem;
+    background: repeating-linear-gradient(-45deg, var(--c-or) 0 6px, var(--c-bg) 6px 12px);
+    animation: con-haz 1.6s linear infinite;
+    background-size: 17px 17px;
+  }
+  @keyframes con-haz {
+    to {
+      background-position: 17px 0;
+    }
+  }
+  .con-no {
+    color: #fff;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+  .con-no:hover {
+    color: var(--c-or);
+  }
+  .con-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--c-line), transparent);
+  }
+  .con-hint {
+    color: var(--c-dim);
+  }
+
+  /* body: rail + plate */
+  .con-body {
+    display: flex;
+  }
+  .con-rail {
+    position: relative;
+    flex: none;
+    width: 1.5rem;
+    border-right: 1px solid var(--c-line);
+    overflow: hidden;
+  }
+  .con-rail span {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    writing-mode: vertical-rl;
+    transform: translate(-50%, -50%) rotate(180deg);
+    white-space: nowrap;
+    font-size: 0.5rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+  }
+  .con-plate {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* faint CRT scanlines + a slow sweep */
+  .scan {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+    overflow: hidden;
+  }
+  .scan::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 18%;
+    top: -18%;
+    background: linear-gradient(180deg, transparent, rgba(223, 99, 53, 0.06), transparent);
+    animation: con-sweep 6s linear infinite;
+  }
+  @keyframes con-sweep {
+    to {
+      top: 100%;
+    }
+  }
+
+  /* title card */
+  .card {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 9%;
+    background: #000;
+    color: #fff;
+    font-family: var(--font-serif);
+    font-weight: 800;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .console.card-on .card {
+    display: flex;
+    animation: con-card 1.5s steps(1, end) both;
+  }
+  @keyframes con-card {
+    0% {
+      opacity: 0;
+    }
+    4% {
+      opacity: 1;
+    }
+    7% {
+      opacity: 0.4;
+    }
+    10% {
+      opacity: 1;
+    }
+  }
+  .card-no {
+    font-size: clamp(0.85rem, 1.8vw, 1.15rem);
+    letter-spacing: 0.02em;
+  }
+  .card-big {
+    margin-top: 0.15em;
+    font-size: clamp(2.3rem, 5.6vw, 4rem);
+    line-height: 0.88;
+    letter-spacing: -0.04em;
+    transform: scaleX(0.82);
+    transform-origin: left;
+    width: 122%;
+  }
+  .card-sub {
+    margin-top: 0.5em;
+    font-size: clamp(1rem, 2.2vw, 1.45rem);
+    letter-spacing: -0.01em;
+    transform: scaleX(0.86);
+    transform-origin: left;
+    width: 116%;
+  }
+
+  /* read-outs */
+  .con-foot {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--c-line);
+  }
+  .cell {
+    padding: 0.6rem 0.75rem 0.7rem;
+    min-width: 0;
+  }
+  .cell + .cell {
+    border-left: 1px solid var(--c-line);
+  }
+  .cell-wide {
+    grid-column: span 2;
+  }
+  .lab {
+    font-size: 0.56rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lcd {
+    position: relative;
+    margin-top: 0.2rem;
+    font-size: 1.45rem;
+    line-height: 1.1;
+    letter-spacing: 0.06em;
+    color: var(--c-or);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .lcd .ghost {
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: rgba(223, 99, 53, 0.09);
+  }
+  .lcd small,
+  .val small {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--c-dim);
+  }
+  .console.is-hold [data-o="count"] {
+    animation: con-blink 0.5s steps(1) infinite;
+  }
+  @keyframes con-blink {
+    50% {
+      opacity: 0.15;
+    }
+  }
+  .val {
+    margin-top: 0.25rem;
+    font-size: 1.05rem;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  .bar {
+    margin-top: 0.4rem;
+    height: 3px;
+    background: #222;
+  }
+  .bar span {
+    display: block;
+    height: 100%;
+    background: var(--c-or);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+  .state {
+    margin-top: 0.3rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+  }
+  .console.is-contact .state {
+    color: var(--c-or);
+  }
+  .spark {
+    display: block;
+    width: 100%;
+    height: 2.1rem;
+    margin-top: 0.3rem;
+  }
+  .spark .mid {
+    stroke: #262626;
+    stroke-dasharray: 2 3;
+  }
+  .spark polyline {
+    fill: none;
+    stroke: var(--c-or);
+    stroke-width: 1.2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* three-way grasp vote */
+  .votes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+  }
+  .vote {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    column-gap: 0.4rem;
+    padding: 0.3rem 0.45rem;
+    border: 1px solid #333;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
+  }
+  .v-no {
+    grid-row: span 2;
+    font-family: var(--font-serif);
+    font-weight: 800;
+    font-size: 1.3rem;
+    line-height: 1;
+    color: #555;
+  }
+  .v-name {
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #bbb;
+  }
+  .v-st {
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-dim);
+  }
+  .vote.is-go {
+    border-color: var(--c-or);
+    background: rgba(223, 99, 53, 0.12);
+  }
+  .vote.is-go .v-no,
+  .vote.is-go .v-st {
+    color: var(--c-or);
+  }
+  .console.is-approved .votes .vote {
+    background: var(--c-or);
+  }
+  .console.is-approved .votes .vote * {
+    color: #0b0b0b;
+  }
+  .console.is-approved [data-o="verdict"] {
+    color: var(--c-or);
+  }
+
+  @media (max-width: 520px) {
+    .con-hint {
+      display: none;
+    }
+    .con-foot {
+      grid-template-columns: 1fr 1fr;
+    }
+    .con-foot .cell:last-child:not(.cell-wide) {
+      grid-column: span 2;
+      border-left: 0;
+      border-top: 1px solid var(--c-line);
+    }
+    .con-foot:has(.cell-wide) {
+      grid-template-columns: 1fr;
+    }
+    .cell-wide {
+      grid-column: auto;
+      border-left: 0 !important;
+      border-top: 1px solid var(--c-line);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .haz,
+    .scan::after {
+      animation: none;
+    }
+  }
+</style>
