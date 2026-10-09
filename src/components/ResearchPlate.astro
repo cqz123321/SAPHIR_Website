@@ -21,6 +21,10 @@ interface Props {
 }
 const { kind, index, tag, detail = false } = Astro.props;
 const ZOOM = 2.5;
+// Research page: the taxel array is touched with the cursor (no magnifier there);
+// the other two detail plates get the ×2.5 magnifier.
+const touch = detail && kind === "tactile";
+const zoom = detail && !touch;
 const ticks = (r1: number, r2: number, n = 24) =>
   Array.from({ length: n }, (_, k) => {
     const a = (k / n) * Math.PI * 2;
@@ -79,7 +83,7 @@ const hexPath = (r: number) =>
   }).join("L") + "Z";
 ---
 
-<figure class:list={["plate", detail && "plate-detail"]} data-plate={kind} data-zoom={detail ? ZOOM : undefined}>
+<figure class:list={["plate", zoom && "plate-detail", touch && "plate-touch"]} data-plate={kind} data-zoom={zoom ? ZOOM : undefined}>
   <svg viewBox="0 0 400 280" role="img" aria-label={`Illustration: ${tag.toLowerCase()}`}>
     <defs>
       <pattern id={`${id}-dots`} width="20" height="20" patternUnits="userSpaceOnUse">
@@ -94,7 +98,7 @@ const hexPath = (r: number) =>
       </pattern>
     </defs>
 
-    {detail && (
+    {zoom && (
       <defs>
         <clipPath id={`${id}-lens`}><circle class="lens-clip" r="46" cx="-100" cy="-100"></circle></clipPath>
       </defs>
@@ -198,7 +202,7 @@ const hexPath = (r: number) =>
         <rect x="24" y="50" width="222" height="196" rx="10" fill="none" stroke="#5c5c5c"></rect>
         <g class="taxels">
           {taxels.map((t) => {
-            const p = p0(t);
+            const p = touch ? 0 : p0(t);
             return (
               <path
                 d={hexD}
@@ -226,12 +230,22 @@ const hexPath = (r: number) =>
             <text x="30" y="243" font-size="3" fill="#8c8c8c" letter-spacing="0.3">72 TAXELS · INTERDIGITATED ELECTRODES · ROW-COLUMN SCAN</text>
           </g>
         )}
-        <g class="contact" transform={`translate(${C0.x} ${C0.y})`} fill="none" stroke="#df6335">
+        {touch && (
+          <g pointer-events="none">
+            <polyline class="trail" fill="none" stroke="#df6335" stroke-opacity="0.45" stroke-width="1" stroke-linejoin="round" stroke-dasharray="1.5 2.5"></polyline>
+            <g class="shear" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round">
+              {taxels.map((t) => <line x1={t.x.toFixed(2)} y1={t.y.toFixed(2)} x2={t.x.toFixed(2)} y2={t.y.toFixed(2)} stroke-opacity="0"></line>)}
+            </g>
+            <text class="touch-hint" x="135" y="150" text-anchor="middle" font-size="7" fill="#df6335" letter-spacing="1.2">TOUCH THE SKIN</text>
+          </g>
+        )}
+        <g class="contact" transform={`translate(${C0.x} ${C0.y})`} fill="none" stroke="#df6335" opacity={touch ? 0 : undefined} pointer-events="none">
           <circle r="20" stroke-opacity="0.9"></circle>
           <circle r="38" stroke-opacity="0.5" stroke-dasharray="2 4"></circle>
           <circle r="56" stroke-opacity="0.25" stroke-dasharray="2 4"></circle>
           <path d="M-5 0H5M0 -5V5" stroke="#fff"></path>
           {detail && <text x="22" y="-16" font-size="3" fill="#df6335" stroke="none" letter-spacing="0.3">CONTACT · PEAK</text>}
+          {touch && <path class="shear-arrow" d="M0 0" stroke="#fff" stroke-width="1.4" stroke-linecap="round"></path>}
           {detail && (
             <g class="ripple" stroke-width="0.8">
               <path d={hexPath(16)}></path>
@@ -241,14 +255,14 @@ const hexPath = (r: number) =>
           )}
         </g>
         <!-- row profile -->
-        <path d={`M24 ${72 + PROFILE_ROW * 1.5 * R}h-8`} stroke="#df6335"></path>
+        <path class="row-mark" d={`M24 ${72 + PROFILE_ROW * 1.5 * R}h-8`} stroke="#df6335"></path>
         <g transform="translate(266 70)">
           <path d="M0 0V160H118" fill="none" stroke="#6b6b6b"></path>
           <text x="4" y="8" class="t">F</text>
-          <text x="118" y="174" class="t" text-anchor="end">ROW 04</text>
+          <text x="118" y="174" class="t row-label" text-anchor="end">ROW 04</text>
           <g class="bars">
             {taxels.filter((t) => t.row === PROFILE_ROW).map((t, k) => {
-              const h = p0(t) * 140;
+              const h = touch ? 0 : p0(t) * 140;
               return <rect x={6 + k * 12.4} y={160 - h} width="7" height={h} fill="#d4d4d4" data-col={t.col} />;
             })}
           </g>
@@ -385,7 +399,7 @@ const hexPath = (r: number) =>
       </g>
     )}
     </g>
-    {detail && (
+    {zoom && (
       <g class="loupe" aria-hidden="true">
         <g clip-path={`url(#${id}-lens)`}>
           <rect width="400" height="280" fill="#0f0f0f"></rect>
@@ -449,55 +463,178 @@ const hexPath = (r: number) =>
       visible ? svg.unpauseAnimations() : svg.pauseAnimations();
     }).observe(fig);
 
-    if (fig.dataset.plate === "tactile" && !reduce) {
+    // (the Research-page array only moves when you touch it, so it stays interactive with reduced motion)
+    if (fig.dataset.plate === "tactile" && (!reduce || fig.classList.contains("plate-touch"))) {
       const cells = [...svg.querySelectorAll<SVGPathElement>(".taxels path")].map((el) => ({
         el,
         x: +el.dataset.x!,
         y: +el.dataset.y!,
         row: +el.dataset.row!,
         col: +el.dataset.col!,
+        line: null as SVGLineElement | null,
       }));
       // The magnifier holds a copy of the drawing, so update every copy of the bars / contact marker.
       const barSets = [...svg.querySelectorAll<SVGGElement>(".bars")].map((g) => [...g.querySelectorAll<SVGRectElement>("rect")]);
       const contacts = [...svg.querySelectorAll<SVGGElement>(".contact")];
       const s2 = 2 * 30 * 30;
-      const live = fig.classList.contains("plate-detail"); // Research page: the finger presses and lifts
-      const state = { amp: 1, peak: 0, active: 0 };
+      const state = { amp: 0, peak: 0, active: 0, shear: 0, angle: 0, touching: false };
       (fig as any).plateState = state;
-      const t0 = performance.now();
-      const tick = (now: number) => {
-        if (visible) {
-          const t = (now - t0) / 1000;
-          const cx = 132 + 52 * Math.sin(t * 0.55);
-          const cy = 146 + 36 * Math.sin(t * 0.83 + 0.6);
-          const amp = live ? Math.min(1, Math.max(0, 0.45 + 0.8 * Math.sin(t * 0.9))) : 1;
-          for (const c of contacts) {
-            c.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
-            if (live) c.setAttribute("opacity", Math.min(1, amp * 1.6).toFixed(2));
+      const ROWS = 8;
+      const rowY = (j: number) => 72 + j * 1.5 * 13;
+      const rowMark = svg.querySelector<SVGPathElement>(".row-mark");
+      const rowLabel = svg.querySelector<SVGTextElement>(".row-label");
+      const setRow = (j: number) => {
+        rowMark?.setAttribute("d", `M24 ${rowY(j)}h-8`);
+        if (rowLabel) rowLabel.textContent = `ROW ${String(j + 1).padStart(2, "0")}`;
+      };
+      // Pressure (and, on the Research page, shear) at every taxel for a contact at (cx, cy).
+      const paint = (cx: number, cy: number, amp: number, sx: number, sy: number, row: number) => {
+        let peak = 0;
+        let on = 0;
+        for (const c of cells) {
+          const p = amp * Math.exp(-((c.x - cx) ** 2 + (c.y - cy) ** 2) / s2);
+          if (p > peak) peak = p;
+          if (p > 0.25) on++;
+          c.el.setAttribute("fill-opacity", (p * 0.85).toFixed(3));
+          c.el.setAttribute("stroke-opacity", (0.22 + p * 0.6).toFixed(3));
+          if (c.line) {
+            c.line.setAttribute("x2", (c.x + sx * p * 14).toFixed(2));
+            c.line.setAttribute("y2", (c.y + sy * p * 14).toFixed(2));
+            c.line.setAttribute("stroke-opacity", Math.min(1, p * Math.hypot(sx, sy) * 2.2).toFixed(2));
           }
-          let peak = 0;
-          let on = 0;
-          for (const c of cells) {
-            const p = amp * Math.exp(-((c.x - cx) ** 2 + (c.y - cy) ** 2) / s2);
-            if (p > peak) peak = p;
-            if (p > 0.25) on++;
-            c.el.setAttribute("fill-opacity", (p * 0.85).toFixed(3));
-            c.el.setAttribute("stroke-opacity", (0.22 + p * 0.6).toFixed(3));
-            if (c.row === 3) {
-              const h = p * 140;
-              for (const bars of barSets) {
-                bars[c.col]?.setAttribute("y", (160 - h).toFixed(1));
-                bars[c.col]?.setAttribute("height", h.toFixed(1));
-              }
+          if (c.row === row) {
+            const h = p * 140;
+            for (const bars of barSets) {
+              bars[c.col]?.setAttribute("y", (160 - h).toFixed(1));
+              bars[c.col]?.setAttribute("height", h.toFixed(1));
             }
           }
-          state.amp = amp;
-          state.peak = peak;
-          state.active = Math.round(on / Math.max(1, barSets.length)); // the magnifier holds a second copy
+        }
+        state.peak = peak;
+        state.active = Math.round(on / Math.max(1, barSets.length)); // a magnifier would hold a second copy
+      };
+
+      if (!fig.classList.contains("plate-touch")) {
+        // Homepage: the contact wanders across the array on its own.
+        const t0 = performance.now();
+        const tick = (now: number) => {
+          if (visible) {
+            const t = (now - t0) / 1000;
+            const cx = 132 + 52 * Math.sin(t * 0.55);
+            const cy = 146 + 36 * Math.sin(t * 0.83 + 0.6);
+            for (const c of contacts) c.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+            paint(cx, cy, 1, 0, 0, 3);
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      // Research page: the cursor is the finger. Hover = light touch, press = firm press.
+      // Shear comes from the finger's recent motion: the skin is dragged along with it,
+      // and the pressure peak trails slightly behind.
+      const lines = [...svg.querySelectorAll<SVGLineElement>(".shear line")];
+      cells.forEach((c, i) => (c.line = lines[i]));
+      const trail = svg.querySelector<SVGPolylineElement>(".trail");
+      const hint = svg.querySelector<SVGTextElement>(".touch-hint");
+      const arrow = svg.querySelector<SVGPathElement>(".shear-arrow");
+      const PAD = { x0: 26, x1: 244, y0: 52, y1: 244 };
+      let tx = 135,
+        ty = 148,
+        inside = false,
+        down = false;
+      const toSvg = (e: PointerEvent) => {
+        const m = svg.getScreenCTM();
+        return m ? new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()) : null;
+      };
+      const onMove = (e: PointerEvent) => {
+        const p = toSvg(e);
+        if (!p) return;
+        inside = p.x > PAD.x0 && p.x < PAD.x1 && p.y > PAD.y0 && p.y < PAD.y1;
+        if (inside) {
+          tx = p.x;
+          ty = p.y;
+        }
+        if (inside) wake();
+      };
+      svg.addEventListener("pointermove", onMove);
+      svg.addEventListener("pointerdown", (e) => {
+        down = true;
+        onMove(e);
+      });
+      window.addEventListener("pointerup", () => (down = false));
+      svg.addEventListener("pointerleave", () => {
+        inside = false;
+        down = false;
+      });
+
+      let cx = tx,
+        cy = ty,
+        px = tx,
+        py = ty,
+        vx = 0,
+        vy = 0,
+        amp = 0,
+        last = performance.now(),
+        running = false;
+      const hist: { x: number; y: number; t: number }[] = [];
+      const tick = (now: number) => {
+        const dt = Math.min(0.05, (now - last) / 1000) || 0.016;
+        last = now;
+        // follow the pointer, estimate its velocity (smoothed)
+        cx += (tx - cx) * Math.min(1, dt / 0.04);
+        cy += (ty - cy) * Math.min(1, dt / 0.04);
+        const k = Math.min(1, dt / 0.12);
+        vx += ((cx - px) / dt - vx) * k;
+        vy += ((cy - py) / dt - vy) * k;
+        px = cx;
+        py = cy;
+        amp += ((inside ? (down ? 1 : 0.62) : 0) - amp) * Math.min(1, dt / 0.08);
+        let sx = vx * 0.006,
+          sy = vy * 0.006;
+        const sm = Math.hypot(sx, sy);
+        if (sm > 1) {
+          sx /= sm;
+          sy /= sm;
+        }
+        const shear = Math.min(1, sm);
+        // the pressure peak lags behind the moving finger
+        const ox = cx - sx * 6,
+          oy = cy - sy * 6;
+        const row = Math.max(0, Math.min(ROWS - 1, Math.round((oy - 72) / (1.5 * 13))));
+        setRow(row);
+        paint(ox, oy, amp, sx * amp, sy * amp, row);
+        for (const c of contacts) {
+          c.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+          c.setAttribute("opacity", Math.min(1, amp * 1.6).toFixed(2));
+        }
+        arrow?.setAttribute("d", shear * amp > 0.04 ? `M0 0L${(sx * 34).toFixed(1)} ${(sy * 34).toFixed(1)}` : "M0 0");
+        // recent path of the finger
+        const t = now / 1000;
+        if (amp > 0.05) hist.push({ x: cx, y: cy, t });
+        while (hist.length && t - hist[0].t > 0.9) hist.shift();
+        trail?.setAttribute("points", hist.map((h) => `${h.x.toFixed(1)},${h.y.toFixed(1)}`).join(" "));
+        hint?.setAttribute("opacity", (1 - Math.min(1, amp * 3)).toFixed(2));
+        state.amp = amp;
+        state.shear = shear * amp;
+        state.angle = Math.atan2(sy, sx);
+        state.touching = amp > 0.15;
+        // stop when the finger has lifted and everything has settled
+        if (!inside && amp < 0.002 && hist.length === 0) {
+          running = false;
+          paint(0, 0, 0, 0, 0, row);
+          state.shear = 0;
+          return;
         }
         requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
+      const wake = () => {
+        if (running) return;
+        running = true;
+        last = performance.now();
+        requestAnimationFrame(tick);
+      };
     }
   });
 </script>
@@ -523,6 +660,10 @@ const hexPath = (r: number) =>
   .plate-detail svg {
     cursor: crosshair;
     touch-action: pan-y;
+  }
+  .plate-touch svg {
+    cursor: none;
+    touch-action: none;
   }
   .plate .loupe {
     opacity: 0;

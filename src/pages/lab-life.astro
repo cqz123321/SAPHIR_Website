@@ -1,16 +1,21 @@
 ---
 import { withBase } from "../lib/urls";
 import { getCollection } from "astro:content";
+import { getImage } from "astro:assets";
 import BaseLayout from "../components/BaseLayout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import GalleryGrid from "../components/GalleryGrid.astro";
 
 // Newest first; photos from the same day keep their file-name order.
-const items = (await getCollection("gallery")).sort(
+const items = (await getCollection("gallery", (g) => !g.data.draft)).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime() || a.id.localeCompare(b.id),
 );
 const nVideo = items.filter((i) => i.data.video).length;
 const nPhoto = items.length - nVideo;
+// Small copies of the photos for the film strip in the header (oldest → newest, left to right).
+const strip = await Promise.all(
+  [...items].reverse().map(async (i) => (await getImage({ src: i.data.image, width: 360, format: "webp" })).src),
+);
 ---
 
 <BaseLayout
@@ -20,6 +25,7 @@ const nPhoto = items.length - nVideo;
   <PageHeader
     index={6}
     motif="film"
+    images={strip}
     eyebrow="Beyond the bench"
     title="Lab Life"
     meta={`${nPhoto} photos${nVideo ? ` · ${nVideo} video${nVideo > 1 ? "s" : ""}` : ""}`}

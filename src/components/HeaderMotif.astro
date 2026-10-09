@@ -10,7 +10,7 @@
                              that finds a stiff inclusion
     stream   Publications  — drifting columns of years / venues / DOI prefixes
     reticle  Figures       — measurement grid + crosshair with live coordinates
-    film     Lab Life      — a film strip sliding past
+    film     Lab Life      — a film strip of the group's own photos sliding through a gate
     radar    Contact       — range rings, a sweep, and a ping at Mile End
     ribbon   Profiles      — a band of contour lines (like the logo's), shaped
                              by the person's slug so every profile is unique
@@ -30,8 +30,10 @@ interface Props {
   count?: number;
   /** terrain: draw the soft→stiff colour key (top right). */
   legend?: boolean;
+  /** film: photo URLs shown in the frames, in order. */
+  images?: string[];
 }
-const { kind, seed = "", count = 13, legend = true } = Astro.props;
+const { kind, seed = "", count = 13, legend = true, images = [] } = Astro.props;
 ---
 
 <canvas
@@ -40,11 +42,12 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
   data-seed={seed}
   data-count={count}
   data-legend={legend ? "1" : "0"}
+  data-images={images.length ? JSON.stringify(images) : undefined}
   aria-hidden="true"></canvas>
 
 <script>
   type Ctx = CanvasRenderingContext2D;
-  type State = { w: number; h: number; t: number; mx: number; my: number; hover: boolean; seed: number; n: number; legend: boolean; mem: any };
+  type State = { w: number; h: number; t: number; mx: number; my: number; hover: boolean; seed: number; n: number; legend: boolean; mem: any; imgs: HTMLImageElement[] };
 
   const O = (a: number) => `rgba(223,99,53,${a})`; // accent
   const Wt = (a: number) => `rgba(255,255,255,${a})`;
@@ -289,18 +292,44 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
   };
 
   const film = (c: Ctx, s: State) => {
-    const fh = Math.min(170, s.h * 0.5), fw = fh * 1.35, gap = 14;
+    const fh = Math.min(170, s.h * 0.5), fw = fh * 1.35, gap = 14, pitch = fw + gap;
     const y0 = s.h * 0.5 - fh / 2;
-    const off = (s.t * 28) % (fw + gap);
+    const run = s.t * 28;
+    const off = run % pitch;
+    const gx = s.w * 0.68 - fw / 2; // the gate
+    const imgs = s.imgs.filter((im) => im.complete && im.naturalWidth > 0);
+    const n = s.imgs.length;
+    let inGate = -1;
     c.fillStyle = Wt(0.03);
     c.fillRect(0, y0 - 26, s.w, fh + 52);
-    for (let x = -fw + off - (fw + gap); x < s.w + fw; x += fw + gap) {
-      c.strokeStyle = Wt(0.14);
-      c.strokeRect(x + 0.5, y0 + 0.5, fw, fh);
-      // a quiet "image": horizon + sun
-      c.strokeStyle = Wt(0.07);
-      c.beginPath(); c.moveTo(x + 8, y0 + fh * 0.7); c.lineTo(x + fw * 0.4, y0 + fh * 0.45); c.lineTo(x + fw * 0.65, y0 + fh * 0.62); c.lineTo(x + fw - 8, y0 + fh * 0.38); c.stroke();
-      c.beginPath(); c.arc(x + fw * 0.75, y0 + fh * 0.25, 9, 0, Math.PI * 2); c.stroke();
+    for (let j = 0, x = -fw + off - pitch; x < s.w + fw; j++, x += pitch) {
+      // each frame keeps its photo as the strip moves (new frames enter from the left)
+      const slot = j - Math.floor(run / pitch);
+      const k = n ? ((slot % n) + n) % n : 0;
+      const im = n ? s.imgs[k] : null;
+      const near = Math.max(0, 1 - Math.abs(x - gx) / fw); // 1 = sitting in the gate
+      if (near > 0.5) inGate = k;
+      if (im && imgs.includes(im)) {
+        // cover-crop the photo into the frame
+        const r = Math.max(fw / im.naturalWidth, fh / im.naturalHeight);
+        const sw = fw / r, sh = fh / r;
+        c.save();
+        c.beginPath(); c.rect(x, y0, fw, fh); c.clip();
+        c.globalAlpha = 0.28 + 0.62 * near;
+        c.filter = near > 0.35 ? "none" : "grayscale(1) contrast(0.9)";
+        c.drawImage(im, (im.naturalWidth - sw) / 2, (im.naturalHeight - sh) / 2, sw, sh, x, y0, fw, fh);
+        c.restore();
+        c.filter = "none";
+        c.strokeStyle = Wt(0.14);
+        c.strokeRect(x + 0.5, y0 + 0.5, fw, fh);
+      } else {
+        c.strokeStyle = Wt(0.14);
+        c.strokeRect(x + 0.5, y0 + 0.5, fw, fh);
+        // a quiet "image": horizon + sun
+        c.strokeStyle = Wt(0.07);
+        c.beginPath(); c.moveTo(x + 8, y0 + fh * 0.7); c.lineTo(x + fw * 0.4, y0 + fh * 0.45); c.lineTo(x + fw * 0.65, y0 + fh * 0.62); c.lineTo(x + fw - 8, y0 + fh * 0.38); c.stroke();
+        c.beginPath(); c.arc(x + fw * 0.75, y0 + fh * 0.25, 9, 0, Math.PI * 2); c.stroke();
+      }
     }
     for (let x = -(s.t * 28) % 22; x < s.w; x += 22) {
       c.fillStyle = Wt(0.12);
@@ -308,14 +337,17 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
       c.fillRect(x, y0 + fh + 11, 10, 7);
     }
     // the frame in the gate
-    const gx = s.w * 0.68 - fw / 2;
     c.strokeStyle = O(0.85);
     c.lineWidth = 1.5;
     c.strokeRect(gx, y0 - 6, fw, fh + 12);
     c.lineWidth = 1;
     c.fillStyle = O(1);
     c.font = `10px ${MONO}`;
-    c.fillText(`FRAME ${String(Math.floor(s.t * 2) % 999).padStart(3, "0")}`, gx, y0 + fh + 36);
+    c.fillText(
+      n ? `FRAME ${inGate < 0 ? "--" : String(inGate + 1).padStart(2, "0")} / ${String(n).padStart(2, "0")}` : `FRAME ${String(Math.floor(s.t * 2) % 999).padStart(3, "0")}`,
+      gx,
+      y0 + fh + 36,
+    );
   };
 
   const radar = (c: Ctx, s: State) => {
@@ -440,6 +472,7 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
       n: Number(canvas.dataset.count) || 13,
       legend: canvas.dataset.legend !== "0",
       mem: null,
+      imgs: [],
     };
     let dpr = 1;
 
@@ -457,6 +490,15 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
       canvas.height = Math.round(s.h * dpr);
       frame();
     };
+    try {
+      s.imgs = (JSON.parse(canvas.dataset.images || "[]") as string[]).map((src) => {
+        const im = new Image();
+        im.decoding = "async";
+        im.onload = () => frame(); // also fills the still frame for reduced motion
+        im.src = src;
+        return im;
+      });
+    } catch {}
     host.addEventListener("pointermove", (e) => {
       const r = host.getBoundingClientRect();
       s.mx = e.clientX - r.left;

@@ -9,7 +9,9 @@
     • a row of live read-outs that follow the drawing:
         soft     eversion length (LCD), an e-skin strip along the body that lights up
                  near obstacles, internal pressure
-        tactile  peak force (LCD), active taxels / contact state, force history
+        tactile  the array is touched with the cursor (press = push harder); normal
+                 force (LCD), shear force + direction from the cursor's recent motion,
+                 and a history of both
         arm      distance to target (LCD), and a three-way grasp vote (vision ·
                  planner · touch); once all three agree the target is locked,
                  grasped, lifted and put back
@@ -33,7 +35,7 @@ const nn = String(index).padStart(2, "0");
   <div class="con-head">
     <button type="button" class="con-no" data-replay data-sfx="tick" title="Replay title card">DIRECTION {nn}</button>
     <span class="con-rule" aria-hidden="true"></span>
-    <span class="con-hint">Hover to magnify ×2.5</span>
+    <span class="con-hint">{kind === "tactile" ? "Touch with the cursor · click to press" : "Hover to magnify ×2.5"}</span>
   </div>
 
   <div class="con-body">
@@ -75,17 +77,25 @@ const nn = String(index).padStart(2, "0");
     {kind === "tactile" && (
       <>
         <div class="cell">
-          <p class="lab">Peak force</p>
+          <p class="lab">Normal force</p>
           <p class="lcd"><span class="ghost">8.88</span><span data-o="force">0.00</span><small> N</small></p>
-        </div>
-        <div class="cell">
-          <p class="lab">Active taxels</p>
-          <p class="val"><span data-o="active">00</span><small> / 72</small></p>
           <p class="state" data-o="contact">No contact</p>
         </div>
         <div class="cell">
-          <p class="lab">Force history</p>
-          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none"><path d="M0 29H120" class="mid"></path><polyline data-o="trace"></polyline></svg>
+          <p class="lab">Shear force</p>
+          <div class="shear-row">
+            <p class="lcd"><span class="ghost">8.88</span><span data-o="shear">0.00</span><small> N</small></p>
+            <svg class="compass" viewBox="-12 -12 24 24" aria-hidden="true">
+              <circle r="10.5" class="ring"></circle>
+              <path d="M0 -10.5v2M0 10.5v-2M-10.5 0h2M10.5 0h-2" class="ring"></path>
+              <path data-o="needle" d="M0 0L0 0" class="needle"></path>
+            </svg>
+          </div>
+          <p class="state"><span data-o="dir">---</span>&deg; · from motion</p>
+        </div>
+        <div class="cell">
+          <p class="lab"><span class="k-n">Normal</span> / <span class="k-s">shear</span></p>
+          <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none"><path d="M0 29H120" class="mid"></path><polyline data-o="trace"></polyline><polyline data-o="trace2" class="t2"></polyline></svg>
         </div>
       </>
     )}
@@ -145,11 +155,18 @@ const nn = String(index).padStart(2, "0");
     const svg = fig.querySelector("svg") as SVGSVGElement;
     const o = (k: string) => con.querySelector<HTMLElement>(`[data-o="${k}"]`);
     const trace = con.querySelector<SVGPolylineElement>('[data-o="trace"]');
+    const trace2 = con.querySelector<SVGPolylineElement>('[data-o="trace2"]');
     const hist: number[] = [];
-    const push = (v: number) => {
+    const hist2: number[] = [];
+    const pts = (h: number[]) => h.map((y, i) => `${((i / 89) * 120).toFixed(1)},${(29 - y * 27).toFixed(1)}`).join(" ");
+    const push = (v: number, v2?: number) => {
       hist.push(v);
       if (hist.length > 90) hist.shift();
-      trace?.setAttribute("points", hist.map((y, i) => `${((i / 89) * 120).toFixed(1)},${(29 - y * 27).toFixed(1)}`).join(" "));
+      trace?.setAttribute("points", pts(hist));
+      if (v2 === undefined) return;
+      hist2.push(v2);
+      if (hist2.length > 90) hist2.shift();
+      trace2?.setAttribute("points", pts(hist2));
     };
 
     // Title card: cuts in once when the plate first comes into view (click the header to replay).
@@ -226,14 +243,19 @@ const nn = String(index).padStart(2, "0");
       }
 
       if (kind === "tactile") {
-        const st = (fig as any).plateState ?? { amp: 0, peak: 0, active: 0 };
-        const force = st.peak * 2.6;
+        const st = (fig as any).plateState ?? { peak: 0, active: 0, shear: 0, angle: 0, touching: false };
+        const force = st.peak * 2.6; // normal force, N
+        const shear = force * 0.6 * st.shear; // friction-limited shear, N
         o("force")!.textContent = force.toFixed(2);
-        o("active")!.textContent = pad(st.active, 2);
-        const touching = st.active > 0;
-        o("contact")!.textContent = touching ? "Contact detected" : "No contact";
+        o("shear")!.textContent = shear.toFixed(2);
+        const touching = st.touching;
+        o("contact")!.textContent = touching ? `Contact · ${pad(st.active, 2)}/72 taxels` : "No contact";
         con.classList.toggle("is-contact", touching);
-        push(force / 2.8);
+        const moving = shear > 0.03;
+        const deg = ((st.angle * 180) / Math.PI + 450) % 360; // 0° = up, clockwise
+        o("dir")!.textContent = moving ? pad(deg, 3) : "---";
+        o("needle")!.setAttribute("d", moving ? `M0 0L${(Math.cos(st.angle) * 9).toFixed(2)} ${(Math.sin(st.angle) * 9).toFixed(2)}` : "M0 0L0 0");
+        push(force / 2.8, shear / 1.7);
       }
 
       if (kind === "arm") {
@@ -526,6 +548,38 @@ const nn = String(index).padStart(2, "0");
     stroke: var(--c-or);
     stroke-width: 1.2;
     vector-effect: non-scaling-stroke;
+  }
+  .spark polyline.t2 {
+    stroke: #e5e5e5;
+    stroke-dasharray: 3 2;
+  }
+  .k-n {
+    color: var(--c-or);
+  }
+  .k-s {
+    color: #e5e5e5;
+  }
+  .shear-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .compass {
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    margin-top: 0.2rem;
+  }
+  .compass .ring {
+    fill: none;
+    stroke: #444;
+    stroke-width: 1;
+  }
+  .compass .needle {
+    stroke: var(--c-or);
+    stroke-width: 1.8;
+    stroke-linecap: round;
   }
 
   /* three-way grasp vote */

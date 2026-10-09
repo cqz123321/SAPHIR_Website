@@ -159,7 +159,7 @@ export function menteeMatcher(people: Person[]) {
 
 /** News items, newest first. */
 export async function getNews() {
-  const items = await getCollection("news");
+  const items = await getCollection("news", (n) => !n.data.draft);
   return items.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 

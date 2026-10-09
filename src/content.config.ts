@@ -81,6 +81,7 @@ const gallery = defineCollection({
       caption: z.string(),
       // Optional video, as a path under public/ (e.g. "gallery/party.mp4"); the image is its poster.
       video: z.string().optional(),
+      draft: z.boolean().default(false), // true = hidden from the site
       date: z.coerce.date(),
       people: z.array(z.string()).optional(),
       featured: z.boolean().default(false),
@@ -93,7 +94,9 @@ const news = defineCollection({
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
-    type: z.enum(["Funding", "Event", "Talk", "Award", "Visit", "People", "Media"]).default("Event"),
+    // Unknown/old types (e.g. "Paper") fall back to "Event" instead of breaking the build.
+    type: z.enum(["Funding", "Event", "Talk", "Award", "Visit", "People", "Media"]).catch("Event").default("Event"),
+    draft: z.boolean().default(false), // true = hidden from the site
     link: z.string().optional(),
     linkLabel: z.string().optional(),
   }),
