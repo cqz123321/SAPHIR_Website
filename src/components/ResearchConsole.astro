@@ -4,13 +4,15 @@
 
     • a title card (heavy serif on black) that cuts in once when the plate first
       scrolls into view, then cuts away to the drawing
-    • a header strip with hazard tape and the magnifier hint, and a vertical rail
-      with the direction's keywords
+    • a header strip with the magnifier hint, and a vertical rail with the
+      direction's keywords
     • a row of live read-outs that follow the drawing:
-        soft     time to full length (LCD countdown), body length, internal pressure
+        soft     eversion length (LCD), an e-skin strip along the body that lights up
+                 near obstacles, internal pressure
         tactile  peak force (LCD), active taxels / contact state, force history
         arm      distance to target (LCD), and a three-way grasp vote (vision ·
-                 touch · planner) that approves when all three agree
+                 planner · touch); once all three agree the target is locked,
+                 grasped, lifted and put back
 
   The numbers are illustrative — they are driven by the animation, not real data.
 */
@@ -29,7 +31,6 @@ const nn = String(index).padStart(2, "0");
 
 <div class="console" data-console={kind}>
   <div class="con-head">
-    <span class="haz" aria-hidden="true"></span>
     <button type="button" class="con-no" data-replay data-sfx="tick" title="Replay title card">DIRECTION {nn}</button>
     <span class="con-rule" aria-hidden="true"></span>
     <span class="con-hint">Hover to magnify ×2.5</span>
@@ -54,13 +55,16 @@ const nn = String(index).padStart(2, "0");
     {kind === "soft" && (
       <>
         <div class="cell">
-          <p class="lab">Time to full length</p>
-          <p class="lcd"><span class="ghost">88:88.88</span><span data-o="count">00:04.20</span></p>
+          <p class="lab">Eversion length</p>
+          <p class="lcd"><span class="ghost">888</span><span data-o="len">000</span><small> mm</small></p>
+          <div class="bar"><span data-o="lenbar"></span></div>
         </div>
         <div class="cell">
-          <p class="lab">Body length</p>
-          <p class="val"><span data-o="len">000</span> <small>mm</small></p>
-          <div class="bar"><span data-o="lenbar"></span></div>
+          <p class="lab">E-skin · <span data-o="near">0</span>/16 near</p>
+          <div class="skin">
+            {Array.from({ length: 16 }, () => <span></span>)}
+          </div>
+          <p class="state">Base &rarr; tip</p>
         </div>
         <div class="cell">
           <p class="lab">Pressure · <span data-o="kpa">0.0</span> kPa</p>
@@ -102,6 +106,9 @@ const nn = String(index).padStart(2, "0");
               </div>
             ))}
           </div>
+          <ol class="seq">
+            {["Lock", "Grasp", "Lift", "Place", "Release"].map((st) => <li>{st}</li>)}
+          </ol>
         </div>
       </>
     )}
@@ -125,6 +132,11 @@ const nn = String(index).padStart(2, "0");
   };
   const growEase = bezier(0.45, 0, 0.25, 1);
   const armEase = bezier(0.45, 0, 0.55, 1);
+  // Arm keyframes — keep in step with ARM (detail) in ResearchPlate.astro.
+  const KT = [0, 0.3, 0.46, 0.58, 0.68, 0.78, 0.82, 1];
+  const Q1 = [-8, 27, 27, 16.4, 16.4, 27, 27, -8];
+  const Q2 = [10, 10.6, 10.6, -7.6, -7.6, 10.6, 10.6, 10];
+  const Q3 = [40, 52.4, 52.4, 81.2, 81.2, 52.4, 52.4, 40];
   const pad = (n: number, w: number) => String(Math.max(0, Math.round(n))).padStart(w, "0");
 
   document.querySelectorAll<HTMLElement>(".console").forEach((con) => {
@@ -147,7 +159,7 @@ const nn = String(index).padStart(2, "0");
       void con.offsetWidth; // restart the animation
       con.classList.add("card-on");
       clearTimeout(cardTimer);
-      cardTimer = window.setTimeout(() => con.classList.remove("card-on"), 1500);
+      cardTimer = window.setTimeout(() => con.classList.remove("card-on"), 4000);
     };
     con.querySelector("[data-replay]")?.addEventListener("click", playCard);
     let shown = false;
@@ -165,8 +177,24 @@ const nn = String(index).padStart(2, "0");
     new IntersectionObserver(([e]) => (visible = e.isIntersecting)).observe(con);
 
     const pathEl = svg.querySelector<SVGPathElement>(`#plate-soft-path`);
-    const fullMM = pathEl ? (pathEl.getTotalLength() * 20) / 60 : 110; // the scale bar is 60 units = 20 mm
+    const fullLen = pathEl?.getTotalLength() ?? 330;
+    const fullMM = (fullLen * 20) / 60; // the scale bar is 60 units = 20 mm
+    // Body e-skin: 16 taxels along the body; each reads how close its segment is to an obstacle.
+    const skin = [...con.querySelectorAll<HTMLElement>(".skin span")];
+    const OBST = [
+      { x: 150, y: 226, r: 30 },
+      { x: 300, y: 80, r: 26 },
+    ];
+    const near = skin.map((_, k) => {
+      if (!pathEl) return 0;
+      const pt = pathEl.getPointAtLength(((k + 0.5) / skin.length) * fullLen);
+      const gap = Math.min(...OBST.map((b) => Math.hypot(pt.x - b.x, pt.y - b.y) - b.r - 11));
+      return gap;
+    });
+    const gMin = Math.min(...near);
+    const prox = near.map((g) => Math.max(0, 1 - (g - gMin) / 38)); // 1 = closest segment
     const votes = [...con.querySelectorAll<HTMLElement>("[data-vote]")];
+    const seq = [...con.querySelectorAll<HTMLElement>(".seq li")];
     let last = 0;
 
     const frame = (now: number) => {
@@ -179,11 +207,16 @@ const nn = String(index).padStart(2, "0");
         const u = (T % 7) / 7;
         const growing = u < 0.6;
         const prog = growing ? growEase(u / 0.6) : 1;
-        const left = growing ? (0.6 - u) * 7 : 0;
-        const s = Math.floor(left);
-        o("count")!.textContent = `00:${pad(s, 2)}.${pad((left - s) * 100, 2)}`;
-        con.classList.toggle("is-hold", !growing);
         o("len")!.textContent = pad(prog * fullMM, 3);
+        let n = 0;
+        skin.forEach((el, k) => {
+          const grown = (k + 1) / skin.length <= prog + 0.02;
+          const v = grown ? prox[k] : 0;
+          if (v > 0.5) n++;
+          el.style.setProperty("--v", v.toFixed(2));
+          el.classList.toggle("is-grown", grown);
+        });
+        o("near")!.textContent = String(n);
         o("lenbar")!.style.transform = `scaleX(${prog.toFixed(3)})`;
         // pressure: ramps up, bumps while squeezing past each obstacle, drops to a holding value
         const bump = (c: number) => Math.exp(-((prog - c) ** 2) / 0.004);
@@ -204,15 +237,32 @@ const nn = String(index).padStart(2, "0");
       }
 
       if (kind === "arm") {
-        const t8 = (T % 8) / 8;
-        const r = t8 < 0.5 ? armEase(t8 / 0.5) : armEase((1 - t8) / 0.5); // 0 = far, 1 = at the target
-        o("dist")!.textContent = pad(2 + 118 * (1 - r), 3);
-        const go = [r > 0.55, r > 0.8, r > 0.97];
+        const t = (T % 10) / 10;
+        // same keyframes as the drawing → forward kinematics → gripper centre
+        let k = 0;
+        while (k < KT.length - 2 && t > KT[k + 1]) k++;
+        const f = armEase((t - KT[k]) / (KT[k + 1] - KT[k]));
+        const q = [Q1, Q2, Q3].map((Q) => ((Q[k] + (Q[k + 1] - Q[k]) * f) * Math.PI) / 180);
+        const a1 = q[0] - Math.PI / 2,
+          a2 = q[0] + q[1],
+          a3 = a2 + q[2];
+        const gx = 90 + 85 * Math.cos(a1) + 75 * Math.cos(a2) + 40 * Math.cos(a3);
+        const gy = 222 + 85 * Math.sin(a1) + 75 * Math.sin(a2) + 40 * Math.sin(a3);
+        const held = t >= 0.44 && t < 0.8;
+        o("dist")!.textContent = held ? "000" : pad(Math.hypot(gx - 188, gy - 232) / 3, 3); // 3 units = 1 mm
+        const live = t < 0.83;
+        const go = [live && t > 0.1, live && t > 0.2, live && t > 0.3];
         votes.forEach((v, i) => {
           v.classList.toggle("is-go", go[i]);
           v.querySelector(".v-st")!.textContent = go[i] ? "Go" : "Wait";
         });
         const n = go.filter(Boolean).length;
+        // Lock → Grasp → Lift → Place → Release
+        const stage = !live || n < 3 ? -1 : t < 0.37 ? 0 : t < 0.46 ? 1 : t < 0.68 ? 2 : t < 0.79 ? 3 : 4;
+        seq.forEach((li, i) => {
+          li.classList.toggle("is-done", i < stage);
+          li.classList.toggle("is-now", i === stage);
+        });
         o("verdict")!.textContent = n === 3 ? "approved 3/3" : `pending ${n}/3`;
         con.classList.toggle("is-approved", n === 3);
       }
@@ -239,23 +289,11 @@ const nn = String(index).padStart(2, "0");
     align-items: center;
     gap: 0.75rem;
     height: 2rem;
-    padding-right: 0.75rem;
+    padding: 0 0.75rem;
     border-bottom: 1px solid var(--c-line);
     font-size: 0.625rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-  }
-  .haz {
-    align-self: stretch;
-    width: 3.25rem;
-    background: repeating-linear-gradient(-45deg, var(--c-or) 0 6px, var(--c-bg) 6px 12px);
-    animation: con-haz 1.6s linear infinite;
-    background-size: 17px 17px;
-  }
-  @keyframes con-haz {
-    to {
-      background-position: 17px 0;
-    }
   }
   .con-no {
     color: #fff;
@@ -345,19 +383,19 @@ const nn = String(index).padStart(2, "0");
   }
   .console.card-on .card {
     display: flex;
-    animation: con-card 1.5s steps(1, end) both;
+    animation: con-card 4s steps(1, end) both;
   }
   @keyframes con-card {
     0% {
       opacity: 0;
     }
-    4% {
+    1.5% {
       opacity: 1;
     }
-    7% {
+    2.6% {
       opacity: 0.4;
     }
-    10% {
+    3.8% {
       opacity: 1;
     }
   }
@@ -430,13 +468,20 @@ const nn = String(index).padStart(2, "0");
     letter-spacing: 0.12em;
     color: var(--c-dim);
   }
-  .console.is-hold [data-o="count"] {
-    animation: con-blink 0.5s steps(1) infinite;
+  .skin {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 2px;
+    margin-top: 0.45rem;
   }
-  @keyframes con-blink {
-    50% {
-      opacity: 0.15;
-    }
+  .skin span {
+    height: 0.9rem;
+    border: 1px solid #2c2c2c;
+    background: transparent;
+  }
+  .skin span.is-grown {
+    border-color: #555;
+    background: rgba(223, 99, 53, calc(var(--v, 0) * 0.95));
   }
   .val {
     margin-top: 0.25rem;
@@ -536,6 +581,35 @@ const nn = String(index).padStart(2, "0");
   .console.is-approved .votes .vote * {
     color: #0b0b0b;
   }
+  .seq {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .seq li {
+    flex: 1;
+    padding: 0.2rem 0;
+    text-align: center;
+    color: #555;
+    border-top: 2px solid #2c2c2c;
+  }
+  .seq li.is-done {
+    color: #bbb;
+    border-color: #777;
+  }
+  .seq li.is-now {
+    color: var(--c-or);
+    border-color: var(--c-or);
+    animation: con-blink 0.6s steps(1) infinite;
+  }
+  @keyframes con-blink {
+    50% {
+      color: #fff;
+    }
+  }
   .console.is-approved [data-o="verdict"] {
     color: var(--c-or);
   }
@@ -562,7 +636,6 @@ const nn = String(index).padStart(2, "0");
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .haz,
     .scan::after {
       animation: none;
     }

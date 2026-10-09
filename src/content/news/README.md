@@ -1,15 +1,15 @@
 # News
 
-Each `.md` file in this folder is one news item (any file name). Copy an
-existing one and edit it:
+Funding, events, talks, visits, awards and people news — one `.md` file per
+item (any file name). Papers belong in Publications, not here.
 
 ```markdown
 ---
-title: "Our paper on X accepted at ICRA 2027"
+title: "New EPSRC grant for soft robotic endoscopy"
 date: 2027-01-20
-type: Paper        # Paper, Talk, Event, Award, People or Media
-link: "https://doi.org/10.xxxx/xxxxx"   # optional
-linkLabel: "Read the paper"            # optional
+type: Funding      # Funding, Event, Talk, Award, Visit, People or Media
+link: "https://…"  # optional
+linkLabel: "Grant details"  # optional
 ---
 
 One or two sentences about it. Markdown links work here.

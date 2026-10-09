@@ -12,14 +12,14 @@ const years = [...new Set(items.map((n) => n.data.date.getFullYear()))];
 const types = [...new Set(items.map((n) => n.data.type))];
 ---
 
-<BaseLayout title="News" description="Papers, talks, events and other news from the SAPHIR group.">
+<BaseLayout title="News" description="Funding, events, talks, awards and other news from the SAPHIR group.">
   <PageHeader
     index={5}
     motif="timeline"
     eyebrow="Latest"
     title="News"
-    lead="Papers, talks, events and people news from the group, newest first."
-    meta={`${items.length} items`}
+    lead="Funding, events, talks, visits and people news from the group, newest first. For papers, see Publications."
+    meta={`${items.length} item${items.length === 1 ? "" : "s"}`}
   >
     <Fragment slot="readout">{types.join(" / ")}</Fragment>
   </PageHeader>

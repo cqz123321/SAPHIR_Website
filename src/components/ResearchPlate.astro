@@ -49,6 +49,29 @@ const C0 = { x: 128, y: 140 };
 const p0 = (t: { x: number; y: number }) =>
   Math.exp(-((t.x - C0.x) ** 2 + (t.y - C0.y) ** 2) / (2 * 30 * 30));
 const PROFILE_ROW = 3;
+
+// Arm motion. Homepage: reach and return (8 s). Research page (detail): reach,
+// lock on, close the gripper, lift the object, put it back, release, return (10 s).
+// Poses are solved so the gripper points straight down onto the target at (188, 232).
+const ARM = detail
+  ? {
+      dur: "10s",
+      keyTimes: "0;0.3;0.46;0.58;0.68;0.78;0.82;1",
+      keySplines: Array(7).fill("0.45 0 0.55 1").join(";"),
+      q1: "-8;27;27;16.4;16.4;27;27;-8",
+      q2: "10;10.6;10.6;-7.6;-7.6;10.6;10.6;10",
+      q3: "40;52.4;52.4;81.2;81.2;52.4;52.4;40",
+    }
+  : {
+      dur: "8s",
+      keyTimes: "0;0.5;1",
+      keySplines: "0.45 0 0.55 1;0.45 0 0.55 1",
+      q1: "-8;14;-8",
+      q2: "10;35;10",
+      q3: "40;0;40",
+    };
+const GRIP = { keyTimes: "0;0.37;0.43;0.79;0.83;1", dur: "10s" };
+const HELD = { keyTimes: "0;0.44;0.445;0.8;0.805;1", dur: "10s" };
 const hexPath = (r: number) =>
   "M" + Array.from({ length: 6 }, (_, k) => {
     const a = (Math.PI / 3) * k;
@@ -247,7 +270,10 @@ const hexPath = (r: number) =>
         <text x="38" y="196" class="t">&#123;B&#125;</text>
 
         <!-- object + planned approach -->
-        <ellipse cx="188" cy="232" rx="13" ry="8" fill="#df6335" fill-opacity="0.18" stroke="#df6335"></ellipse>
+        <ellipse cx="188" cy="232" rx="13" ry="8" fill="#df6335" fill-opacity="0.18" stroke="#df6335">
+          {detail && <animate attributeName="rx" values="13;13;9;9;13;13" keyTimes={GRIP.keyTimes} dur={GRIP.dur} repeatCount="indefinite"></animate>}
+          {detail && <animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes={HELD.keyTimes} dur={HELD.dur} repeatCount="indefinite"></animate>}
+        </ellipse>
         <path d="M184 160C186 185 187 205 187 218" fill="none" stroke="#df6335" stroke-dasharray="3 4"></path>
         <g stroke="#df6335" fill="none">
           <circle cx="188" cy="232" r="20" stroke-opacity="0.45"></circle>
@@ -256,11 +282,11 @@ const hexPath = (r: number) =>
         <text x="218" y="222" class="t">TARGET</text>
         {detail && (
           <g transform="translate(188 232)" fill="none" stroke="#df6335" stroke-width="1.2">
-            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.42;0.425;0.57;0.6;1" dur="8s" repeatCount="indefinite"></animate>
+            <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.3;0.305;0.44;0.46;1" dur="10s" repeatCount="indefinite"></animate>
             <g>
-              <animateTransform attributeName="transform" type="scale" values="2;2;1;1" keyTimes="0;0.42;0.47;1" dur="8s" repeatCount="indefinite"></animateTransform>
+              <animateTransform attributeName="transform" type="scale" values="2;2;1;1" keyTimes="0;0.3;0.34;1" dur="10s" repeatCount="indefinite"></animateTransform>
               <g>
-                <animateTransform attributeName="transform" type="rotate" values="0;0;45;45" keyTimes="0;0.42;0.47;1" dur="8s" repeatCount="indefinite"></animateTransform>
+                <animateTransform attributeName="transform" type="rotate" values="0;0;45;45" keyTimes="0;0.3;0.34;1" dur="10s" repeatCount="indefinite"></animateTransform>
                 <path d="M-17 -11V-17H-11M11 -17H17V-11M17 11V17H11M-11 17H-17V11"></path>
               </g>
             </g>
@@ -299,8 +325,8 @@ const hexPath = (r: number) =>
             </g>
           )}
           <g>
-            <animateTransform attributeName="transform" type="rotate" values="-8;14;-8" keyTimes="0;0.5;1"
-              dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
+            <animateTransform attributeName="transform" type="rotate" values={ARM.q1} keyTimes={ARM.keyTimes}
+              dur={ARM.dur} calcMode="spline" keySplines={ARM.keySplines} repeatCount="indefinite"></animateTransform>
             <rect x="-6" y="-85" width="12" height="85" rx="6" fill="#0f0f0f" stroke="#d4d4d4"></rect>
             <circle r="8" fill="#0f0f0f" stroke="#d4d4d4"></circle>
             <circle r="2" fill="#d4d4d4"></circle>
@@ -312,8 +338,8 @@ const hexPath = (r: number) =>
                 </g>
               )}
               <g>
-                <animateTransform attributeName="transform" type="rotate" values="10;35;10" keyTimes="0;0.5;1"
-                  dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
+                <animateTransform attributeName="transform" type="rotate" values={ARM.q2} keyTimes={ARM.keyTimes}
+                  dur={ARM.dur} calcMode="spline" keySplines={ARM.keySplines} repeatCount="indefinite"></animateTransform>
                 <rect x="0" y="-5" width="75" height="10" rx="5" fill="#0f0f0f" stroke="#d4d4d4"></rect>
                 <circle r="7" fill="#0f0f0f" stroke="#d4d4d4"></circle>
                 <circle r="2" fill="#d4d4d4"></circle>
@@ -325,13 +351,31 @@ const hexPath = (r: number) =>
                     </g>
                   )}
                   <g>
-                    <animateTransform attributeName="transform" type="rotate" values="40;0;40" keyTimes="0;0.5;1"
-                      dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
+                    <animateTransform attributeName="transform" type="rotate" values={ARM.q3} keyTimes={ARM.keyTimes}
+                      dur={ARM.dur} calcMode="spline" keySplines={ARM.keySplines} repeatCount="indefinite"></animateTransform>
                     <rect x="0" y="-4" width="26" height="8" rx="4" fill="#0f0f0f" stroke="#d4d4d4"></rect>
                     <circle r="6" fill="#0f0f0f" stroke="#d4d4d4"></circle>
-                    <path d="M26 -7V7M26 -7H36M26 7H36" fill="none" stroke="#d4d4d4"></path>
-                    <circle cx="31" cy="0" r="1.8" fill="#df6335"></circle>
-                    {detail && <text x="39" y="-2" font-size="2.6" fill="#a3a3a3" letter-spacing="0.2">TCP</text>}
+                    {detail ? (
+                      <g>
+                        <ellipse cx="40" cy="0" rx="9.5" ry="9" fill="#df6335" fill-opacity="0.3" stroke="#df6335" opacity="0">
+                          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes={HELD.keyTimes} dur={HELD.dur} repeatCount="indefinite"></animate>
+                        </ellipse>
+                        <path d="M26 -14V14" fill="none" stroke="#d4d4d4"></path>
+                        <path d="M26 -13H47" fill="none" stroke="#d4d4d4" stroke-width="1.6">
+                          <animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 4;0 4;0 0;0 0" keyTimes={GRIP.keyTimes} dur={GRIP.dur} repeatCount="indefinite"></animateTransform>
+                        </path>
+                        <path d="M26 13H47" fill="none" stroke="#d4d4d4" stroke-width="1.6">
+                          <animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 -4;0 -4;0 0;0 0" keyTimes={GRIP.keyTimes} dur={GRIP.dur} repeatCount="indefinite"></animateTransform>
+                        </path>
+                        <circle cx="40" cy="0" r="1.6" fill="#df6335"></circle>
+                        <text x="30" y="-17" font-size="2.6" fill="#a3a3a3" letter-spacing="0.2">TCP</text>
+                      </g>
+                    ) : (
+                      <>
+                        <path d="M26 -7V7M26 -7H36M26 7H36" fill="none" stroke="#d4d4d4"></path>
+                        <circle cx="31" cy="0" r="1.8" fill="#df6335"></circle>
+                      </>
+                    )}
                   </g>
                 </g>
               </g>

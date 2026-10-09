@@ -1,6 +1,7 @@
 ---
 import { Image, getImage } from "astro:assets";
 import type { CollectionEntry } from "astro:content";
+import { withBase } from "../lib/urls";
 
 interface Props {
   items: CollectionEntry<"gallery">[];
@@ -30,7 +31,8 @@ const full = await Promise.all(
           data-full={full[i].src}
           data-caption={item.data.caption}
           data-date={fmtDate(item.data.date)}
-          aria-label={`View full-size photo: ${item.data.caption}`}
+          data-video={item.data.video ? withBase(`/${item.data.video}`) : undefined}
+          aria-label={`${item.data.video ? "Play video" : "View full-size photo"}: ${item.data.caption}`}
         >
           <Image
             src={item.data.image}
@@ -39,6 +41,12 @@ const full = await Promise.all(
             sizes="(min-width: 640px) 50vw, 100vw"
             class="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.04]"
           />
+          {item.data.video && (
+            <span class="play" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+              <span class="label-mono">Video</span>
+            </span>
+          )}
         </button>
         <figcaption class="border-t-2 border-slate-900 pt-3 transition-colors group-hover:border-accent-500">
           <p class="label-mono text-slate-500">No.{String(i + 1).padStart(2, "0")} · {fmtDate(item.data.date)}</p>
@@ -71,6 +79,13 @@ const full = await Promise.all(
       alt=""
       class="block max-h-[80vh] w-full bg-slate-950 object-contain"
     />
+    <video
+      id="lightbox-video"
+      class="hidden max-h-[80vh] w-full bg-slate-950"
+      controls
+      playsinline
+      preload="none"
+    ></video>
     <p id="lightbox-caption" class="bg-white px-4 py-3 text-sm text-slate-700"></p>
   </div>
 </dialog>
@@ -80,21 +95,38 @@ const full = await Promise.all(
   if (dialog) {
     const img = document.getElementById("lightbox-img") as HTMLImageElement;
     const cap = document.getElementById("lightbox-caption") as HTMLElement;
+    const vid = document.getElementById("lightbox-video") as HTMLVideoElement;
     const closeBtn = document.getElementById("lightbox-close");
 
     document
       .querySelectorAll<HTMLButtonElement>("[data-lightbox]")
       .forEach((btn) => {
         btn.addEventListener("click", () => {
-          img.src = btn.dataset.full ?? "";
-          img.alt = btn.dataset.caption ?? "";
+          const video = btn.dataset.video;
+          img.classList.toggle("hidden", Boolean(video));
+          vid.classList.toggle("hidden", !video);
+          if (video) {
+            img.src = "";
+            vid.poster = btn.dataset.full ?? "";
+            vid.src = video;
+          } else {
+            img.src = btn.dataset.full ?? "";
+            img.alt = btn.dataset.caption ?? "";
+          }
           const date = btn.dataset.date ? ` · ${btn.dataset.date}` : "";
           cap.textContent = (btn.dataset.caption ?? "") + date;
           dialog.showModal();
+          if (video) vid.play().catch(() => {});
         });
       });
 
     const close = () => dialog.close();
+    // Stop the video whenever the viewer closes (button, backdrop or Esc).
+    dialog.addEventListener("close", () => {
+      vid.pause();
+      vid.removeAttribute("src");
+      vid.load();
+    });
     closeBtn?.addEventListener("click", close);
     // Click on the backdrop (outside the image card) closes the viewer.
     dialog.addEventListener("click", (e) => {
@@ -102,3 +134,25 @@ const full = await Promise.all(
     });
   }
 </script>
+
+<style>
+  .play {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem 0.35rem 0.45rem;
+    background: rgba(11, 11, 11, 0.8);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition:
+      background-color 0.2s,
+      border-color 0.2s;
+  }
+  .group:hover .play {
+    background: #df6335;
+    border-color: #df6335;
+  }
+</style>

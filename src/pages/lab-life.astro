@@ -5,9 +5,12 @@ import BaseLayout from "../components/BaseLayout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import GalleryGrid from "../components/GalleryGrid.astro";
 
+// Newest first; photos from the same day keep their file-name order.
 const items = (await getCollection("gallery")).sort(
-  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+  (a, b) => b.data.date.getTime() - a.data.date.getTime() || a.id.localeCompare(b.id),
 );
+const nVideo = items.filter((i) => i.data.video).length;
+const nPhoto = items.length - nVideo;
 ---
 
 <BaseLayout
@@ -19,7 +22,7 @@ const items = (await getCollection("gallery")).sort(
     motif="film"
     eyebrow="Beyond the bench"
     title="Lab Life"
-    meta={`${items.length} photos`}
+    meta={`${nPhoto} photos${nVideo ? ` · ${nVideo} video${nVideo > 1 ? "s" : ""}` : ""}`}
     lead="Conferences, celebrations, and everyday life in the lab."
   >
     <Fragment slot="readout">Roll 01 · 35 mm</Fragment>

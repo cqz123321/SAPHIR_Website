@@ -77,8 +77,10 @@ const gallery = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/gallery" }),
   schema: ({ image }) =>
     z.object({
-      image: image(),
+      image: image(), // for a video: its poster frame
       caption: z.string(),
+      // Optional video, as a path under public/ (e.g. "gallery/party.mp4"); the image is its poster.
+      video: z.string().optional(),
       date: z.coerce.date(),
       people: z.array(z.string()).optional(),
       featured: z.boolean().default(false),
@@ -91,7 +93,7 @@ const news = defineCollection({
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
-    type: z.enum(["Paper", "Talk", "Event", "Award", "People", "Media"]).default("Event"),
+    type: z.enum(["Funding", "Event", "Talk", "Award", "Visit", "People", "Media"]).default("Event"),
     link: z.string().optional(),
     linkLabel: z.string().optional(),
   }),
