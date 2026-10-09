@@ -1,0 +1,449 @@
+---
+/*
+  PeopleSelect — an arcade "character select" for the team.
+
+    variant="strip"   one row of portraits (homepage)
+    variant="screen"  a portrait grid + a large preview panel (People page)
+
+  Portraits are in full colour. Hovering/focusing one frames it in orange with a
+  "1P" cursor and dims the others; clicking plays the select sound, flashes the
+  tile, then opens that person's profile. Sounds come from Sfx.astro via the
+  data-sfx / data-sfx-click hooks.
+*/
+import { Image, getImage } from "astro:assets";
+import { withBase } from "../lib/urls";
+import type { Person } from "../lib/content";
+
+interface Props {
+  people: Person[];
+  variant?: "strip" | "screen";
+}
+const { people, variant = "strip" } = Astro.props;
+const list = people.filter((p) => p.data.headshot);
+const cols = Math.min(list.length, variant === "strip" ? 13 : 5);
+
+const firstSentence = (s: string) => {
+  const t = s.replace(/\s+/g, " ").trim();
+  const m = t.match(/^(.{40,220}?[.!?])(\s|$)/);
+  return m ? m[1] : t.slice(0, 200);
+};
+const bigs =
+  variant === "screen"
+    ? await Promise.all(list.map((p) => getImage({ src: p.data.headshot!, width: 720, height: 720, format: "webp" })))
+    : [];
+---
+
+<div class:list={["psel", `psel-${variant}`]} data-psel>
+  {
+    variant === "screen" && (
+      <div class="psel-preview" aria-hidden="true">
+        <div class="pv-frame">
+          {list.map((p, i) => (
+            <img
+              src={bigs[i].src}
+              alt=""
+              width="720"
+              height="720"
+              loading={i === 0 ? "eager" : "lazy"}
+              decoding="async"
+              class:list={["pv-img", i === 0 && "is-on"]}
+              data-pv={i}
+            />
+          ))}
+          <span class="pv-flash"></span>
+          <span class="pv-corner tl"></span><span class="pv-corner tr"></span><span class="pv-corner br"></span><span class="pv-corner bl"></span>
+          <span class="pv-tag label-mono">1P</span>
+        </div>
+        <div class="pv-info">
+          <p class="label-mono text-accent-400"><span data-pv-no>No. 01</span> · <span data-pv-group>{list[0]?.data.group}</span></p>
+          <p class="pv-name font-display" data-pv-name>{list[0]?.data.name}</p>
+          <p class="pv-role" data-pv-role>{list[0]?.data.role}</p>
+          <p class="pv-bio" data-pv-bio>{firstSentence(list[0]?.body ?? "")}</p>
+        </div>
+      </div>
+    )
+  }
+
+  <ul class="psel-grid" style={`--cols:${cols}`}>
+    {list.map((p, i) => (
+      <li>
+        <a
+          href={withBase(`/people/${p.id}`)}
+          class="tile"
+          data-sfx="cursor"
+          data-sfx-click="select"
+          data-i={i}
+          data-name={p.data.name}
+          data-role={p.data.role}
+          data-group={p.data.group}
+          data-bio={firstSentence(p.body ?? "")}
+          aria-label={`${p.data.name} — ${p.data.role}`}
+        >
+          <Image src={p.data.headshot!} alt="" width={240} height={240} class="tile-img" />
+          <span class="tile-frame" aria-hidden="true"></span>
+          <span class="tile-tag label-mono" aria-hidden="true">1P</span>
+          <span class="tile-name" aria-hidden="true">{p.data.name}</span>
+          <span class="tile-flash" aria-hidden="true"></span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<script>
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  document.querySelectorAll<HTMLElement>("[data-psel]").forEach((root) => {
+    const tiles = [...root.querySelectorAll<HTMLAnchorElement>(".tile")];
+    const imgs = [...root.querySelectorAll<HTMLElement>(".pv-img")];
+    const flash = root.querySelector<HTMLElement>(".pv-flash");
+    const nameEl = root.querySelector<HTMLElement>("[data-pv-name]");
+    const roleEl = root.querySelector<HTMLElement>("[data-pv-role]");
+    const bioEl = root.querySelector<HTMLElement>("[data-pv-bio]");
+    const noEl = root.querySelector<HTMLElement>("[data-pv-no]");
+    const groupEl = root.querySelector<HTMLElement>("[data-pv-group]");
+    let current = -1;
+
+    const show = (t: HTMLAnchorElement) => {
+      const i = Number(t.dataset.i);
+      tiles.forEach((x) => x.classList.toggle("is-cursor", x === t));
+      root.classList.add("has-cursor");
+      if (i === current || !imgs.length) return;
+      current = i;
+      imgs.forEach((im) => im.classList.toggle("is-on", Number(im.dataset.pv) === i));
+      if (nameEl) nameEl.textContent = t.dataset.name ?? "";
+      if (roleEl) roleEl.textContent = t.dataset.role ?? "";
+      if (bioEl) bioEl.textContent = t.dataset.bio ?? "";
+      if (groupEl) groupEl.textContent = t.dataset.group ?? "";
+      if (noEl) noEl.textContent = `No. ${String(i + 1).padStart(2, "0")}`;
+      if (flash && !reduce) {
+        flash.classList.remove("go");
+        void flash.offsetWidth;
+        flash.classList.add("go");
+      }
+      nameEl?.classList.remove("swap");
+      void nameEl?.offsetWidth;
+      nameEl?.classList.add("swap");
+    };
+
+    tiles.forEach((t) => {
+      t.addEventListener("pointerenter", () => show(t));
+      t.addEventListener("focus", () => show(t));
+      t.addEventListener("click", (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || reduce) return;
+        e.preventDefault();
+        show(t);
+        t.classList.add("is-picked");
+        root.classList.add("picked");
+        setTimeout(() => (location.href = t.href), 420);
+      });
+    });
+    root.addEventListener("pointerleave", () => {
+      if (root.classList.contains("picked")) return;
+      root.classList.remove("has-cursor");
+      tiles.forEach((x) => x.classList.remove("is-cursor"));
+    });
+    // Coming back via the browser's back button: clear the "picked" state.
+    window.addEventListener("pageshow", () => {
+      root.classList.remove("picked", "has-cursor");
+      tiles.forEach((x) => x.classList.remove("is-picked", "is-cursor"));
+    });
+  });
+</script>
+
+<style>
+  .psel-grid {
+    display: grid;
+    gap: 6px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  @media (min-width: 640px) {
+    .psel-strip .psel-grid {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+    .psel-screen .psel-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .psel .psel-grid {
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    }
+  }
+
+  /* ---------- tile ---------- */
+  .tile {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #1a1a1a;
+    outline: none;
+    transition:
+      transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 0.25s;
+  }
+  .tile :global(.tile-img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .psel.has-cursor .tile:not(.is-cursor) {
+    filter: brightness(0.42) saturate(0.75);
+  }
+  .tile.is-cursor {
+    z-index: 2;
+    transform: translateY(-3px) scale(1.04);
+  }
+  .tile.is-cursor :global(.tile-img) {
+    transform: scale(1.06);
+  }
+  .tile-frame {
+    position: absolute;
+    inset: 0;
+    border: 2px solid #df6335;
+    opacity: 0;
+    transition: opacity 0.15s;
+    background:
+      linear-gradient(#df6335, #df6335) top left / 14px 4px no-repeat,
+      linear-gradient(#df6335, #df6335) top left / 4px 14px no-repeat,
+      linear-gradient(#df6335, #df6335) bottom right / 14px 4px no-repeat,
+      linear-gradient(#df6335, #df6335) bottom right / 4px 14px no-repeat;
+  }
+  .tile-tag {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 2px 5px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #0b0b0b;
+    background: #df6335;
+    opacity: 0;
+    transform: translateY(-100%);
+    transition:
+      transform 0.2s,
+      opacity 0.2s;
+  }
+  .tile-name {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 1.6rem 0.45rem 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.85), transparent);
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 0.2s,
+      transform 0.2s;
+  }
+  .tile.is-cursor .tile-frame,
+  .tile:focus-visible .tile-frame {
+    opacity: 1;
+  }
+  .tile.is-cursor .tile-tag,
+  .tile:focus-visible .tile-tag {
+    opacity: 1;
+    transform: none;
+  }
+  .tile.is-cursor .tile-name,
+  .tile:focus-visible .tile-name {
+    opacity: 1;
+    transform: none;
+  }
+  @media (min-width: 640px) {
+    .psel-screen .tile-name {
+      display: none;
+    }
+  }
+  /* Phones: no hover, so skip the preview panel and always label the tiles. */
+  @media (max-width: 639px) {
+    .psel-preview {
+      display: none;
+    }
+    .psel-screen .tile-name {
+      opacity: 1;
+      transform: none;
+      font-size: 0.5rem;
+      padding-top: 1.2rem;
+    }
+  }
+  .tile-flash {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tile.is-picked .tile-flash {
+    animation: tile-flash 0.42s steps(6, end);
+  }
+  .tile.is-picked .tile-frame {
+    border-color: #fff;
+  }
+  @keyframes tile-flash {
+    0%,
+    34%,
+    68% {
+      opacity: 0.85;
+    }
+    17%,
+    51%,
+    85%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* ---------- preview (screen variant) ---------- */
+  .psel-screen {
+    display: grid;
+    gap: 2rem;
+  }
+  @media (min-width: 1024px) {
+    .psel-screen {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      align-items: start;
+      gap: 2.5rem;
+    }
+  }
+  .psel-preview {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .psel-preview {
+      grid-template-columns: 16rem 1fr;
+      align-items: end;
+    }
+  }
+  .pv-frame {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  .pv-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1.04);
+    transition:
+      opacity 0.25s,
+      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .pv-img.is-on {
+    opacity: 1;
+    transform: none;
+  }
+  .pv-flash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent 0%, rgb(223 99 53 / 0.35) 48%, rgb(255 255 255 / 0.6) 50%, rgb(223 99 53 / 0.35) 52%, transparent 100%);
+    background-size: 100% 300%;
+    background-position: 0 100%;
+    opacity: 0;
+  }
+  .pv-flash.go {
+    animation: pv-sweep 0.45s ease-out;
+  }
+  @keyframes pv-sweep {
+    from {
+      opacity: 1;
+      background-position: 0 100%;
+    }
+    to {
+      opacity: 0;
+      background-position: 0 0%;
+    }
+  }
+  .pv-corner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: #df6335;
+    border-style: solid;
+    border-width: 0;
+  }
+  .pv-corner.tl {
+    top: 10px;
+    left: 10px;
+    border-top-width: 2px;
+    border-left-width: 2px;
+  }
+  .pv-corner.tr {
+    top: 10px;
+    right: 10px;
+    border-top-width: 2px;
+    border-right-width: 2px;
+  }
+  .pv-corner.br {
+    bottom: 10px;
+    right: 10px;
+    border-bottom-width: 2px;
+    border-right-width: 2px;
+  }
+  .pv-corner.bl {
+    bottom: 10px;
+    left: 10px;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+  }
+  .pv-tag {
+    position: absolute;
+    top: 10px;
+    left: 40px;
+    padding: 2px 6px;
+    font-weight: 700;
+    color: #0b0b0b;
+    background: #df6335;
+  }
+  .pv-name {
+    margin-top: 0.5rem;
+    font-size: clamp(1.9rem, 3.4vw, 2.75rem);
+    color: #fff;
+    line-height: 0.95;
+  }
+  .pv-name.swap {
+    animation: pv-name 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes pv-name {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+      filter: blur(4px);
+    }
+  }
+  .pv-role {
+    margin-top: 0.6rem;
+    color: #e5e5e5;
+  }
+  .pv-bio {
+    margin-top: 0.75rem;
+    max-width: 36rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #8a8a86;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile,
+    .tile :global(.tile-img),
+    .pv-img {
+      transition: none;
+    }
+    .pv-name.swap {
+      animation: none;
+    }
+  }
+</style>

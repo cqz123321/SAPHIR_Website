@@ -15,17 +15,22 @@ const items = (await getCollection("gallery")).sort(
   description="Photos from life in the lab."
 >
   <PageHeader
+    index={5}
+    motif="film"
     eyebrow="Beyond the bench"
     title="Lab Life"
+    meta={`${items.length} photos`}
     lead="Conferences, celebrations, and everyday life in the lab."
-  />
-  <div class="container-page py-12">
+  >
+    <Fragment slot="readout">Roll 01 · 35 mm</Fragment>
+  </PageHeader>
+  <div class="container-page py-16 pb-24">
     {
       items.length > 0 ? (
         <GalleryGrid items={items} />
       ) : (
-        <div class="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-14 text-center">
-          <svg class="h-10 w-10 text-primary-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <div class="mx-auto flex max-w-md flex-col items-center border border-dashed border-slate-300 px-6 py-14 text-center">
+          <svg class="h-10 w-10 text-accent-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <rect x="3" y="5" width="18" height="14" rx="2" />
             <circle cx="8.5" cy="10" r="1.5" />
             <path stroke-linecap="round" stroke-linejoin="round" d="m4 17 4.5-4.5 3 3L15 12l5 5" />
@@ -36,7 +41,7 @@ const items = (await getCollection("gallery")).sort(
           </p>
           <a
             href={withBase("/people")}
-            class="mt-5 text-sm font-medium text-primary-700 hover:text-accent-600"
+            class="link-rule mt-5 text-sm"
           >
             Meet the team &rarr;
           </a>

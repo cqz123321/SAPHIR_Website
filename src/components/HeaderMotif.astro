@@ -1,0 +1,314 @@
+---
+/*
+  HeaderMotif — the animated background of an inner-page header. One canvas,
+  a different drawing per page, all in the same quiet line-art language:
+
+    scan     People        — slot grid with a slow scan band (select screen)
+    contour  Research      — breathing pressure contours; follows the cursor
+    stream   Publications  — drifting columns of years / DOI fragments
+    reticle  Figures       — measurement grid + crosshair with live coordinates
+    film     Lab Life      — a film strip sliding past
+    radar    Contact       — range rings, a sweep, and a ping at Mile End
+    wave     Profiles      — three signal traces drifting in and out of phase
+    noise    404           — faint static and a rolling tear
+
+  Pauses off-screen; draws a single still frame for prefers-reduced-motion.
+  Fills its positioned parent and listens for the pointer on that parent.
+*/
+interface Props {
+  kind: "scan" | "contour" | "stream" | "reticle" | "film" | "radar" | "wave" | "noise";
+}
+const { kind } = Astro.props;
+---
+
+<canvas class="header-motif" data-kind={kind} aria-hidden="true"></canvas>
+
+<script>
+  type Ctx = CanvasRenderingContext2D;
+  type State = { w: number; h: number; t: number; mx: number; my: number; hover: boolean };
+
+  const O = (a: number) => `rgba(223,99,53,${a})`; // accent
+  const Wt = (a: number) => `rgba(255,255,255,${a})`;
+  const MONO = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
+
+  // ---------- motifs ----------
+  const scan = (c: Ctx, s: State) => {
+    const cell = s.w < 640 ? 44 : 64, gap = 8;
+    const cols = Math.ceil(s.w / (cell + gap)) + 1, rows = Math.ceil(s.h / (cell + gap)) + 1;
+    const band = ((s.t * 0.12) % 1.4 - 0.2) * s.h;
+    for (let j = 0; j < rows; j++)
+      for (let i = 0; i < cols; i++) {
+        const x = i * (cell + gap) + 4, y = j * (cell + gap) + 4;
+        const d = Math.abs(y + cell / 2 - band);
+        const lit = Math.max(0, 1 - d / 90);
+        c.strokeStyle = lit > 0.05 ? O(0.15 + lit * 0.6) : Wt(0.07);
+        c.lineWidth = 1;
+        c.strokeRect(x + 0.5, y + 0.5, cell, cell);
+        // corner brackets on a slowly wandering "cursor" slot
+      }
+    const ci = Math.floor((Math.sin(s.t * 0.4) * 0.5 + 0.5) * (cols - 2)) + 1;
+    const cj = Math.floor((Math.sin(s.t * 0.27 + 1) * 0.5 + 0.5) * (rows - 2));
+    const x = ci * (cell + gap) + 4, y = cj * (cell + gap) + 4, k = 10;
+    c.strokeStyle = O(0.9);
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo(x, y + k); c.lineTo(x, y); c.lineTo(x + k, y);
+    c.moveTo(x + cell - k, y); c.lineTo(x + cell, y); c.lineTo(x + cell, y + k);
+    c.moveTo(x + cell, y + cell - k); c.lineTo(x + cell, y + cell); c.lineTo(x + cell - k, y + cell);
+    c.moveTo(x + k, y + cell); c.lineTo(x, y + cell); c.lineTo(x, y + cell - k);
+    c.stroke();
+    c.fillStyle = O(1);
+    c.font = `600 10px ${MONO}`;
+    c.fillText("1P", x + 3, y - 5);
+    // scan band
+    const g = c.createLinearGradient(0, band - 60, 0, band + 60);
+    g.addColorStop(0, Wt(0)); g.addColorStop(0.5, Wt(0.05)); g.addColorStop(1, Wt(0));
+    c.fillStyle = g;
+    c.fillRect(0, band - 60, s.w, 120);
+  };
+
+  const contour = (c: Ctx, s: State) => {
+    const cx = s.hover ? s.mx : s.w * (0.72 + 0.08 * Math.sin(s.t * 0.3));
+    const cy = s.hover ? s.my : s.h * (0.5 + 0.12 * Math.sin(s.t * 0.41));
+    const centres = [
+      { x: cx, y: cy, n: 11, hot: true },
+      { x: s.w * 0.92, y: s.h * 0.15, n: 6, hot: false },
+    ];
+    for (const ce of centres)
+      for (let k = 1; k <= ce.n; k++) {
+        const r0 = k * (s.w < 640 ? 14 : 22);
+        c.beginPath();
+        for (let a = 0; a <= Math.PI * 2 + 0.01; a += Math.PI / 60) {
+          const r = r0 + Math.sin(a * 3 + s.t * 0.8 + k * 0.4) * k * 1.6 + Math.sin(a * 5 - s.t * 0.5) * k * 0.9;
+          const x = ce.x + Math.cos(a) * r * 1.25, y = ce.y + Math.sin(a) * r;
+          a === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+        }
+        const f = 1 - k / (ce.n + 1);
+        c.strokeStyle = ce.hot && k <= 3 ? O(0.35 + f * 0.5) : Wt(0.05 + f * 0.12);
+        c.lineWidth = ce.hot && k === 1 ? 1.5 : 1;
+        c.stroke();
+      }
+    c.fillStyle = O(0.9);
+    c.beginPath(); c.arc(cx, cy, 2.5, 0, Math.PI * 2); c.fill();
+  };
+
+  const streamCols: { x: number; v: number; s: string[]; hot: number }[] = [];
+  const TOKENS = ["2026", "2025", "2024", "2023", "2022", "10.1109", "10.1038", "IEEE", "RA-L", "ICRA", "IROS", "T-RO", "SOFT", "TACT", "DOI", "N 13", "0.42"];
+  const stream = (c: Ctx, s: State) => {
+    const colW = s.w < 640 ? 56 : 76, pitch = 22;
+    const n = Math.ceil(s.w / colW);
+    if (streamCols.length !== n) {
+      streamCols.length = 0;
+      for (let i = 0; i < n; i++)
+        streamCols.push({
+          x: i * colW + 8,
+          v: 6 + Math.random() * 16,
+          s: Array.from({ length: 40 }, () => TOKENS[(Math.random() * TOKENS.length) | 0]),
+          hot: (Math.random() * 40) | 0,
+        });
+    }
+    c.font = `10px ${MONO}`;
+    const rows = Math.ceil(s.h / pitch) + 2;
+    for (const col of streamCols) {
+      const shift = s.t * col.v;
+      const first = Math.floor(shift / pitch);
+      for (let k = -1; k < rows; k++) {
+        const y = k * pitch + (shift % pitch);
+        const idx = (((k - first) % col.s.length) + col.s.length) % col.s.length;
+        c.fillStyle = idx === col.hot ? O(0.9) : Wt(idx % 4 === 0 ? 0.16 : 0.07);
+        c.fillText(col.s[idx], col.x, y);
+      }
+    }
+  };
+
+  const reticle = (c: Ctx, s: State) => {
+    const step = 24;
+    c.lineWidth = 1;
+    for (let x = 0; x < s.w; x += step) {
+      c.strokeStyle = Wt(x % (step * 5) === 0 ? 0.08 : 0.035);
+      c.beginPath(); c.moveTo(x + 0.5, 0); c.lineTo(x + 0.5, s.h); c.stroke();
+    }
+    for (let y = 0; y < s.h; y += step) {
+      c.strokeStyle = Wt(y % (step * 5) === 0 ? 0.08 : 0.035);
+      c.beginPath(); c.moveTo(0, y + 0.5); c.lineTo(s.w, y + 0.5); c.stroke();
+    }
+    const x = s.hover ? s.mx : s.w * (0.7 + 0.15 * Math.sin(s.t * 0.35));
+    const y = s.hover ? s.my : s.h * (0.5 + 0.25 * Math.sin(s.t * 0.52));
+    c.strokeStyle = O(0.75);
+    c.beginPath(); c.moveTo(x, 0); c.lineTo(x, s.h); c.moveTo(0, y); c.lineTo(s.w, y); c.stroke();
+    const b = 26, k = 8;
+    c.lineWidth = 1.5;
+    c.beginPath();
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      c.moveTo(x + sx * b, y + sy * (b - k)); c.lineTo(x + sx * b, y + sy * b); c.lineTo(x + sx * (b - k), y + sy * b);
+    }
+    c.stroke();
+    c.fillStyle = O(1);
+    c.font = `10px ${MONO}`;
+    c.fillText(`X ${String(Math.round(x)).padStart(4, "0")}  Y ${String(Math.round(y)).padStart(4, "0")}`, x + b + 8, y - b - 4);
+  };
+
+  const film = (c: Ctx, s: State) => {
+    const fh = Math.min(170, s.h * 0.5), fw = fh * 1.35, gap = 14;
+    const y0 = s.h * 0.5 - fh / 2;
+    const off = (s.t * 28) % (fw + gap);
+    c.fillStyle = Wt(0.03);
+    c.fillRect(0, y0 - 26, s.w, fh + 52);
+    for (let x = -fw + off - (fw + gap); x < s.w + fw; x += fw + gap) {
+      c.strokeStyle = Wt(0.14);
+      c.strokeRect(x + 0.5, y0 + 0.5, fw, fh);
+      // a quiet "image": horizon + sun
+      c.strokeStyle = Wt(0.07);
+      c.beginPath(); c.moveTo(x + 8, y0 + fh * 0.7); c.lineTo(x + fw * 0.4, y0 + fh * 0.45); c.lineTo(x + fw * 0.65, y0 + fh * 0.62); c.lineTo(x + fw - 8, y0 + fh * 0.38); c.stroke();
+      c.beginPath(); c.arc(x + fw * 0.75, y0 + fh * 0.25, 9, 0, Math.PI * 2); c.stroke();
+    }
+    for (let x = -(s.t * 28) % 22; x < s.w; x += 22) {
+      c.fillStyle = Wt(0.12);
+      c.fillRect(x, y0 - 18, 10, 7);
+      c.fillRect(x, y0 + fh + 11, 10, 7);
+    }
+    // the frame in the gate
+    const gx = s.w * 0.68 - fw / 2;
+    c.strokeStyle = O(0.85);
+    c.lineWidth = 1.5;
+    c.strokeRect(gx, y0 - 6, fw, fh + 12);
+    c.lineWidth = 1;
+    c.fillStyle = O(1);
+    c.font = `10px ${MONO}`;
+    c.fillText(`FRAME ${String(Math.floor(s.t * 2) % 999).padStart(3, "0")}`, gx, y0 + fh + 36);
+  };
+
+  const radar = (c: Ctx, s: State) => {
+    const cx = s.w * (s.w < 640 ? 0.75 : 0.72), cy = s.h * 0.52, R = Math.max(s.w, s.h) * 0.5;
+    c.lineWidth = 1;
+    for (let r = 40; r < R; r += 44) {
+      c.strokeStyle = Wt(0.07);
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+    }
+    c.strokeStyle = Wt(0.06);
+    c.beginPath(); c.moveTo(cx - R, cy); c.lineTo(cx + R, cy); c.moveTo(cx, cy - R); c.lineTo(cx, cy + R); c.stroke();
+    const a = (s.t * 0.9) % (Math.PI * 2);
+    for (let k = 0; k < 24; k++) {
+      const aa = a - k * 0.025;
+      c.strokeStyle = O(0.5 * (1 - k / 24));
+      c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(aa) * R, cy + Math.sin(aa) * R); c.stroke();
+    }
+    const ph = (s.t % 2.4) / 2.4;
+    c.strokeStyle = O(0.8 * (1 - ph));
+    c.beginPath(); c.arc(cx, cy, 6 + ph * 60, 0, Math.PI * 2); c.stroke();
+    c.fillStyle = O(1);
+    c.beginPath(); c.arc(cx, cy, 3.5, 0, Math.PI * 2); c.fill();
+    if (s.w >= 640) {
+      c.font = `10px ${MONO}`;
+      c.fillText("SAPHIR · MILE END", cx + 12, cy - 10);
+      c.fillStyle = Wt(0.4);
+      c.fillText("51.5241 N  0.0404 W", cx + 12, cy + 18);
+    }
+  };
+
+  const wave = (c: Ctx, s: State) => {
+    const mid = s.h * 0.5, amp = Math.min(60, s.h * 0.18);
+    const drift = Math.sin(s.t * 0.35) * 0.5 + 0.5; // 0 = in sync, 1 = apart
+    const traces = [
+      { ph: 0, col: O(0.85), lw: 1.6 },
+      { ph: 1.4 * drift, col: Wt(0.28), lw: 1 },
+      { ph: -1.1 * drift, col: Wt(0.16), lw: 1 },
+    ];
+    for (const tr of traces) {
+      c.strokeStyle = tr.col;
+      c.lineWidth = tr.lw;
+      c.beginPath();
+      for (let x = s.w * 0.25; x <= s.w; x += 3) {
+        const u = x / 90 - s.t * 1.6 + tr.ph;
+        const env = Math.min(1, (x - s.w * 0.25) / (s.w * 0.2));
+        const y = mid + (Math.sin(u) + 0.35 * Math.sin(u * 2.7 + tr.ph)) * amp * env;
+        x === s.w * 0.25 ? c.moveTo(x, y) : c.lineTo(x, y);
+      }
+      c.stroke();
+    }
+    c.strokeStyle = Wt(0.08);
+    c.beginPath(); c.moveTo(s.w * 0.25, mid); c.lineTo(s.w, mid); c.stroke();
+    c.fillStyle = O(1);
+    c.font = `10px ${MONO}`;
+    c.fillText(`SYNC ${(100 - drift * 62).toFixed(1)}%`, s.w - 110, mid - amp - 18);
+  };
+
+  const noise = (c: Ctx, s: State) => {
+    const n = Math.floor((s.w * s.h) / 900);
+    for (let i = 0; i < n; i++) {
+      c.fillStyle = Wt(Math.random() * 0.12);
+      c.fillRect(Math.random() * s.w, Math.random() * s.h, 2, 2);
+    }
+    const y = ((s.t * 70) % (s.h + 80)) - 40;
+    c.fillStyle = Wt(0.05);
+    c.fillRect(0, y, s.w, 26);
+    c.fillStyle = O(0.6);
+    c.fillRect(0, y + 12, s.w, 1);
+  };
+
+  const DRAW: Record<string, (c: Ctx, s: State) => void> = { scan, contour, stream, reticle, film, radar, wave, noise };
+
+  document.querySelectorAll<HTMLCanvasElement>("canvas.header-motif").forEach((canvas) => {
+    const host = canvas.parentElement as HTMLElement;
+    const c = canvas.getContext("2d");
+    const draw = DRAW[canvas.dataset.kind ?? ""];
+    if (!host || !c || !draw) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const s: State = { w: 1, h: 1, t: 3, mx: 0, my: 0, hover: false };
+    let dpr = 1;
+
+    const frame = () => {
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, s.w, s.h);
+      draw(c, s);
+    };
+    const resize = () => {
+      const r = host.getBoundingClientRect();
+      s.w = Math.max(1, r.width);
+      s.h = Math.max(1, r.height);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(s.w * dpr);
+      canvas.height = Math.round(s.h * dpr);
+      frame();
+    };
+    host.addEventListener("pointermove", (e) => {
+      const r = host.getBoundingClientRect();
+      s.mx = e.clientX - r.left;
+      s.my = e.clientY - r.top;
+      s.hover = true;
+    });
+    host.addEventListener("pointerleave", () => (s.hover = false));
+    new ResizeObserver(resize).observe(host);
+    resize();
+    if (reduce) return;
+
+    let raf = 0, last = performance.now(), on = false;
+    const loop = (now: number) => {
+      s.t += Math.min(0.05, (now - last) / 1000);
+      last = now;
+      frame();
+      raf = requestAnimationFrame(loop);
+    };
+    new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !on) { on = true; last = performance.now(); raf = requestAnimationFrame(loop); }
+      else if (!e.isIntersecting && on) { on = false; cancelAnimationFrame(raf); }
+    }).observe(host);
+  });
+</script>
+
+<style>
+  .header-motif {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.35) 30%, #000 60%);
+    mask-image: linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.35) 30%, #000 60%);
+  }
+  @media (max-width: 639px) {
+    .header-motif {
+      opacity: 0.4;
+    }
+  }
+</style>

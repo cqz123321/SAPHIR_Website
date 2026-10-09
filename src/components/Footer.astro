@@ -1,5 +1,8 @@
 ---
+import { Image } from "astro:assets";
+import { withBase } from "../lib/urls";
 import { site } from "../data/site";
+import mark from "../assets/brand/saphir-mark.png";
 
 const year = new Date().getFullYear();
 
@@ -7,49 +10,46 @@ const socialLinks = [
   { label: "Google Scholar", href: site.social.scholar },
   { label: "X / Twitter", href: site.social.twitter },
   { label: "GitHub", href: site.social.github },
+  { label: "QMUL group page", href: "https://www.sems.qmul.ac.uk/research/groups/softrobotics/" },
 ].filter((l): l is { label: string; href: string } => Boolean(l.href));
-
-const linkClass =
-  "text-slate-600 hover:text-primary-700 transition-colors";
 ---
 
-<footer class="mt-20 border-t border-slate-200 bg-slate-50">
-  <div
-    class="container-page grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-3"
-  >
+<footer class="border-t border-white/10 bg-[#0b0b0b] text-neutral-400">
+  <div class="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
     <div>
-      <p class="font-serif text-lg text-slate-900">{site.name}</p>
-      <p class="mt-2 text-sm text-slate-600">
-        {site.institution} · {site.university}
-      </p>
-      <p class="mt-1 text-sm text-slate-600">
-        Principal Investigator: {site.pi}
-      </p>
+      <a href={withBase("/")} class="inline-flex items-center gap-3" aria-label={`${site.shortName} — home`}>
+        <span class="inline-flex h-11 w-11 items-center justify-center bg-white">
+          <Image src={mark} alt="" width={80} height={80} class="h-9 w-9" />
+        </span>
+        <span class="font-matisse text-xl leading-none text-white">SAPHIR <span class="text-[0.62em]">ROBOTICS</span></span>
+      </a>
+      <p class="mt-5 max-w-xs text-sm leading-relaxed">{site.description}</p>
     </div>
 
     <div>
-      <h2 class="text-sm font-semibold tracking-wide text-slate-600 uppercase">
-        Contact
-      </h2>
-      <p class="mt-3 text-sm text-slate-600">{site.address.join(", ")}</p>
-      <a class="mt-2 inline-block text-sm text-primary-700 hover:underline" href="https://www.sems.qmul.ac.uk/research/groups/softrobotics/">QMUL group website ↗</a>
+      <h2 class="label-mono text-accent-400">Group</h2>
+      <p class="mt-4 text-sm leading-relaxed">
+        {site.institution}<br />{site.university}
+      </p>
+      <p class="mt-3 text-sm">Lead: {site.pi}</p>
     </div>
 
     <div>
-      <h2 class="text-sm font-semibold tracking-wide text-slate-600 uppercase">
-        Elsewhere
-      </h2>
-      <ul class="mt-3 space-y-1 text-sm">
+      <h2 class="label-mono text-accent-400">Find us</h2>
+      <address class="mt-4 text-sm leading-relaxed not-italic">
+        {site.address.slice(2).map((l) => <span class="block">{l}</span>)}
+      </address>
+      <a class="mt-3 inline-block text-sm text-white underline decoration-accent-500 underline-offset-4 hover:text-accent-300" href={withBase("/contact")}>Contact →</a>
+    </div>
+
+    <div>
+      <h2 class="label-mono text-accent-400">Elsewhere</h2>
+      <ul class="mt-4 space-y-1.5 text-sm">
         {
           socialLinks.map((link) => (
             <li>
-              <a
-                href={link.href}
-                class={linkClass}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {link.label}
+              <a href={link.href} class="transition-colors hover:text-white" target="_blank" rel="noopener noreferrer">
+                {link.label} ↗
               </a>
             </li>
           ))
@@ -58,12 +58,10 @@ const linkClass =
     </div>
   </div>
 
-  <div class="border-t border-slate-200">
-    <div
-      class="container-page flex flex-col gap-1 py-4 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <p>© {year} {site.name}.</p>
-      <p>Built with Astro &amp; Tailwind CSS.</p>
+  <div class="border-t border-white/10">
+    <div class="container-page flex flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <p class="label-mono text-neutral-500">© {year} {site.name}</p>
+      <p class="label-mono text-neutral-600">51.5241° N · 0.0404° W · Mile End, London</p>
     </div>
   </div>
 </footer>

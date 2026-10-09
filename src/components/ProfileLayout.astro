@@ -2,12 +2,16 @@
 import { withBase } from "../lib/urls";
 import { Image } from "astro:assets";
 import BaseLayout from "./BaseLayout.astro";
+import HeaderMotif from "./HeaderMotif.astro";
 import type { Person } from "../lib/content";
 
 interface Props {
   person: Person;
+  prev?: Person;
+  next?: Person;
+  no?: number;
 }
-const { person } = Astro.props;
+const { person, prev, next, no } = Astro.props;
 const { name, role, title, headshot, links } = person.data;
 
 const initials = name
@@ -58,59 +62,50 @@ const ICONS: Record<LinkType, { d: string; color?: string }> = {
 ---
 
 <BaseLayout title={name} description={`${role} — ${name}`}>
-  <header class="bg-gradient-to-b from-primary-50 to-white">
-    <div class="container-page py-10">
-      <a
-        href={withBase("/people")}
-        class="group inline-flex items-center gap-1 text-sm font-medium text-primary-700 transition-colors hover:text-accent-600"
-      >
-        <span class="transition-transform group-hover:-translate-x-0.5" aria-hidden="true">&larr;</span>
-        All people
-      </a>
-      <div class="mt-6 grid gap-8 sm:grid-cols-[11rem_1fr] sm:items-center">
-        <div class="mx-auto h-56 w-44  sm:mx-0">
+  <header class="relative overflow-hidden bg-[#0b0b0b] text-white">
+    <HeaderMotif kind="wave" />
+    <div class="prof-frame container-page relative">
+      <div class="flex items-center justify-between gap-4 border-b border-white/15 pb-3 text-neutral-400">
+        <a href={withBase("/people")} class="label-mono group inline-flex items-center gap-2 transition-colors hover:text-white">
+          <span class="transition-transform group-hover:-translate-x-0.5" aria-hidden="true">&larr;</span> All people
+        </a>
+        <span class="label-mono text-accent-400">{person.data.group}{no && <span class="text-neutral-600"> / No. {String(no).padStart(2, "0")}</span>}</span>
+      </div>
+
+      <div class="grid gap-8 py-12 sm:grid-cols-[13rem_1fr] sm:items-end sm:py-14 lg:grid-cols-[16rem_1fr]">
+        <div class="prof-portrait relative aspect-square w-48 overflow-hidden bg-neutral-900 sm:w-full">
           {
             headshot ? (
-              <Image
-                src={headshot}
-                alt={name}
-                width={352}
-                
-                class="h-full w-full object-contain"
-              />
+              <Image src={headshot} alt={name} width={512} height={512} class="h-full w-full object-cover" loading="eager" />
             ) : (
-              <div class="flex h-full w-full items-center justify-center bg-primary-100 text-4xl font-semibold text-primary-700">
-                {initials}
-              </div>
+              <div class="flex h-full w-full items-center justify-center font-display text-5xl text-neutral-500">{initials}</div>
             )
           }
+          <span class="pc tl"></span><span class="pc tr"></span><span class="pc br"></span><span class="pc bl"></span>
+          <span class="prof-tag label-mono">1P</span>
         </div>
 
-        <div>
-          <h1 class="font-serif text-3xl text-slate-900 sm:text-4xl">{name}</h1>
-          <p class="mt-1 text-lg text-primary-700">{role}</p>
-          {title && <p class="mt-1 max-w-2xl text-slate-600">{title}</p>}
+        <div class="min-w-0">
+          <p class="label-mono text-neutral-500">{role}</p>
+          <h1 class="prof-name font-display mt-3">{name}</h1>
+          <span class="prof-rule" aria-hidden="true"></span>
+          {title && <p class="mt-4 max-w-2xl text-neutral-400">{title}</p>}
           {
             linkItems.length > 0 && (
-              <ul class="mt-4 flex flex-wrap items-center gap-3">
+              <ul class="mt-5 flex flex-wrap items-center gap-2">
                 {linkItems.map((l) => (
                   <li>
                     <a
                       href={l.href}
                       target={l.href.startsWith("mailto:") ? undefined : "_blank"}
                       rel="noopener noreferrer"
-                      class="inline-flex text-primary-700 transition-opacity hover:opacity-70"
-                      title={l.label}
-                      aria-label={l.label}
+                      class="label-mono inline-flex items-center gap-2 border border-white/20 px-3 py-2 text-neutral-200 transition-colors hover:border-accent-500 hover:text-white"
+                      data-sfx="tick"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        class="h-5 w-5"
-                        fill={ICONS[l.type].color ?? "currentColor"}
-                        aria-hidden="true"
-                      >
+                      <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
                         <path d={ICONS[l.type].d} />
                       </svg>
+                      {l.label}
                     </a>
                   </li>
                 ))}
@@ -122,9 +117,90 @@ const ICONS: Record<LinkType, { d: string; color?: string }> = {
     </div>
   </header>
 
-  <div class="container-page py-12">
+  <div class="container-page py-16">
     <div class="max-w-3xl">
       <slot />
     </div>
+
+    {
+      (prev || next) && (
+        <nav class="mt-20 grid grid-cols-2 border-t border-slate-900" aria-label="Other members">
+          {prev ? (
+            <a href={withBase(`/people/${prev.id}`)} class="group py-5 pr-4" data-sfx="cursor">
+              <span class="label-mono text-slate-400 transition-colors group-hover:text-accent-600">&larr; Prev</span>
+              <span class="mt-1 block font-serif text-lg text-slate-900 group-hover:text-accent-700">{prev.data.name}</span>
+            </a>
+          ) : <span />}
+          {next ? (
+            <a href={withBase(`/people/${next.id}`)} class="group border-l border-slate-200 py-5 pl-4 text-right" data-sfx="cursor">
+              <span class="label-mono text-slate-400 transition-colors group-hover:text-accent-600">Next &rarr;</span>
+              <span class="mt-1 block font-serif text-lg text-slate-900 group-hover:text-accent-700">{next.data.name}</span>
+            </a>
+          ) : <span />}
+        </nav>
+      )
+    }
   </div>
 </BaseLayout>
+
+<style>
+  .prof-frame {
+    padding-top: 1.75rem;
+    padding-bottom: 1.5rem;
+  }
+  .prof-name {
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    color: #fff;
+    animation: prof-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .prof-rule {
+    display: block;
+    width: min(100%, 22rem);
+    height: 2px;
+    margin-top: 1rem;
+    background: #df6335;
+    transform-origin: left;
+    animation: prof-line 0.7s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both;
+  }
+  .prof-portrait {
+    animation: prof-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .pc {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 0 solid #df6335;
+  }
+  .pc.tl { top: 8px; left: 8px; border-top-width: 2px; border-left-width: 2px; }
+  .pc.tr { top: 8px; right: 8px; border-top-width: 2px; border-right-width: 2px; }
+  .pc.br { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
+  .pc.bl { bottom: 8px; left: 8px; border-bottom-width: 2px; border-left-width: 2px; }
+  .prof-tag {
+    position: absolute;
+    top: 8px;
+    left: 32px;
+    padding: 1px 5px;
+    font-weight: 700;
+    color: #0b0b0b;
+    background: #df6335;
+  }
+  @keyframes prof-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+      filter: blur(6px);
+    }
+  }
+  @keyframes prof-line {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .prof-name,
+    .prof-rule,
+    .prof-portrait {
+      animation: none;
+    }
+  }
+</style>

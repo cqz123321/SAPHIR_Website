@@ -2,23 +2,23 @@
 
 /*
   Brand theme — Tailwind v4, CSS-first (@theme).
-  ⚙️  CUSTOMIZE your palette here. Example: an ocean-blue primary + a
-  magenta-pink accent, with serif (Newsreader) headings and Inter body.
-  Light-first; dark-mode tokens are stubbed below but unused by default.
+  Graphite primary + a single signal-orange accent (#df6335), Newsreader
+  headings, Inter body, a monospace for small technical labels, and the
+  Matisse title face for the SAPHIR wordmark only.
 */
 @theme {
-  /* ---- Ocean-blue primary (brand) ---- */
-  --color-primary-50: #eef6fc;
-  --color-primary-100: #d6e9f7;
-  --color-primary-200: #aed3ef;
-  --color-primary-300: #79b5e2;
-  --color-primary-400: #4090d1;
-  --color-primary-500: #1f73b8;
-  --color-primary-600: #155e9c;
-  --color-primary-700: #124d80;
-  --color-primary-800: #103f68;
-  --color-primary-900: #0d3252;
-  --color-primary-950: #08213a;
+  /* ---- Graphite primary (ink, rules, quiet UI) ---- */
+  --color-primary-50: #f6f6f5;
+  --color-primary-100: #ececea;
+  --color-primary-200: #d6d6d3;
+  --color-primary-300: #b4b4b0;
+  --color-primary-400: #8a8a86;
+  --color-primary-500: #63635f;
+  --color-primary-600: #444441;
+  --color-primary-700: #2e2e2c;
+  --color-primary-800: #1f1f1e;
+  --color-primary-900: #151514;
+  --color-primary-950: #0b0b0b;
 
   /* ---- Signal orange accent (used sparingly: rules, indices, highlights) ---- */
   --color-accent-50: #fdf3ee;
@@ -72,14 +72,19 @@
 
   /* Body-content links are colored; nav/footer style their own links. */
   .prose-content a {
-    @apply text-primary-700 underline underline-offset-2 decoration-primary-300;
+    @apply text-primary-900 underline underline-offset-2 decoration-accent-400;
   }
   .prose-content a:hover {
-    @apply text-primary-800 decoration-primary-500;
+    @apply text-accent-700 decoration-accent-600;
   }
 
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-primary-500;
+    @apply outline-2 outline-offset-2 outline-accent-500;
+  }
+
+  ::selection {
+    background: #df6335;
+    color: #fff;
   }
 }
 
@@ -89,6 +94,20 @@
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+/* Big page titles: heavy, tight, upper-case serif (pairs with the Matisse wordmark). */
+@utility font-display {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.035em;
+  line-height: 0.9;
+}
+
+/* Underlined text link with the orange rule. */
+@utility link-rule {
+  @apply font-medium text-slate-900 underline decoration-accent-500 decoration-2 underline-offset-4 transition-colors hover:text-accent-700;
 }
 
 /* Reusable layout helper: centered content column. */

@@ -9,7 +9,7 @@ const { figure } = Astro.props;
 const d = figure.data;
 ---
 
-<figure class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+<figure class="overflow-hidden border border-slate-200 bg-white">
   <div class="bg-slate-900/5">
     <Image
       src={d.image}
@@ -37,7 +37,7 @@ const d = figure.data;
             href={`https://doi.org/${d.doi}`}
             target="_blank"
             rel="noopener noreferrer"
-            class="text-primary-700 hover:underline"
+            class="text-slate-900 underline decoration-accent-500"
           >
             DOI
           </a>

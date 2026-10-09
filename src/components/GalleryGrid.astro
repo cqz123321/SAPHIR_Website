@@ -18,13 +18,14 @@ const full = await Promise.all(
 );
 ---
 
-<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+<div class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
   {
     items.map((item, i) => (
-      <figure class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <figure class="group overflow-hidden bg-white">
         <button
           type="button"
-          class="group block w-full cursor-zoom-in"
+          class="relative block w-full cursor-zoom-in overflow-hidden bg-slate-900"
+          data-sfx="tick"
           data-lightbox
           data-full={full[i].src}
           data-caption={item.data.caption}
@@ -36,12 +37,12 @@ const full = await Promise.all(
             alt={item.data.caption}
             widths={[400, 800]}
             sizes="(min-width: 640px) 50vw, 100vw"
-            class="aspect-[4/3] w-full object-cover transition duration-300 group-hover:scale-[1.03] group-hover:opacity-95"
+            class="aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.04]"
           />
         </button>
-        <figcaption class="p-4">
-          <p class="text-sm text-slate-700">{item.data.caption}</p>
-          <p class="mt-1 text-xs text-slate-600">{fmtDate(item.data.date)}</p>
+        <figcaption class="border-t-2 border-slate-900 pt-3 transition-colors group-hover:border-accent-500">
+          <p class="label-mono text-slate-500">No.{String(i + 1).padStart(2, "0")} · {fmtDate(item.data.date)}</p>
+          <p class="mt-1.5 text-sm text-slate-800">{item.data.caption}</p>
         </figcaption>
       </figure>
     ))
@@ -50,14 +51,14 @@ const full = await Promise.all(
 
 <dialog
   id="lightbox"
-  class="m-auto w-full max-w-5xl bg-transparent p-0 backdrop:bg-slate-950/80"
+  class="m-auto w-full max-w-5xl bg-transparent p-0 backdrop:bg-black/90"
   aria-label="Photo viewer"
 >
-  <div class="relative overflow-hidden rounded-2xl">
+  <div class="relative overflow-hidden">
     <button
       type="button"
       id="lightbox-close"
-      class="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/60 text-white transition-colors hover:bg-slate-900/85"
+      class="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-white/30 bg-black/60 text-white transition-colors hover:border-accent-500"
       aria-label="Close"
     >
       <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

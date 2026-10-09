@@ -1,6 +1,8 @@
 ---
+import { Image } from "astro:assets";
 import { withBase } from "../lib/urls";
 import { site } from "../data/site";
+import mark from "../assets/brand/saphir-mark.png";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const pathname = Astro.url.pathname.slice(basePath.length) || "/";
@@ -8,114 +10,81 @@ const isActive = (href: string) =>
   href === "/"
     ? pathname === "/"
     : pathname === href || pathname.startsWith(href + "/");
-
-const linkClass = (href: string, mobile = false) => {
-  const active = isActive(href);
-  const inactive = "text-slate-600 hover:text-primary-700 hover:bg-slate-50";
-  if (mobile)
-    return active
-      ? "border-l-2 border-accent-500 bg-primary-50 text-primary-800"
-      : inactive;
-  return active
-    ? "relative text-primary-800 after:absolute after:inset-x-3 after:bottom-1 after:h-0.5 after:rounded-full after:bg-accent-500"
-    : inactive;
-};
 ---
 
 <header
-  class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75"
+  class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80"
 >
-  <nav
-    class="container-page flex h-16 items-center justify-between"
-    aria-label="Primary"
-  >
-    <a href={withBase("/")} class="group flex items-center gap-2.5">
-      <img
-        src={withBase("/favicon.svg")}
-        alt=""
-        width="32"
-        height="32"
-        class="h-8 w-8 rounded-lg"
-      />
-      <span
-        class="font-matisse text-[1.15rem] leading-none tracking-[-0.02em] text-slate-900 transition-colors group-hover:text-accent-600"
-      >
+  <nav class="container-page flex h-16 items-center justify-between gap-4" aria-label="Primary">
+    <a href={withBase("/")} class="group flex items-center gap-2.5" aria-label={`${site.shortName} — home`}>
+      <Image src={mark} alt="" width={64} height={64} class="h-9 w-9 transition-transform duration-500 group-hover:rotate-[-12deg]" loading="eager" />
+      <span class="font-matisse text-[1.15rem] leading-none tracking-[-0.02em] text-slate-900 transition-colors group-hover:text-accent-600">
         SAPHIR <span class="text-[0.62em] tracking-[0.02em]">ROBOTICS</span>
       </span>
     </a>
 
-    <!-- Desktop links -->
-    <ul class="hidden items-center gap-1 md:flex">
-      {
-        site.nav.map((item) => (
-          <li>
-            <a
-              href={withBase(item.href)}
-              aria-current={isActive(item.href) ? "page" : undefined}
-              class:list={[
-                "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                linkClass(item.href),
-              ]}
-            >
-              {item.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    <div class="flex items-center gap-1">
+      <!-- Desktop links -->
+      <ul class="hidden items-center md:flex">
+        {
+          site.nav.map((item, i) => (
+            <li>
+              <a
+                href={withBase(item.href)}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                class:list={["nav-link", isActive(item.href) && "is-active"]}
+              >
+                <span class="nav-idx" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
 
-    <!-- Mobile toggle -->
-    <button
-      type="button"
-      id="nav-toggle"
-      class="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100 md:hidden"
-      aria-controls="mobile-menu"
-      aria-expanded="false"
-    >
-      <span class="sr-only">Toggle navigation menu</span>
-      <svg
-        class="nav-icon-open h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        aria-hidden="true"
+      <button type="button" data-sfx-toggle aria-pressed="true" class="sfx-btn" aria-label="Toggle interface sounds">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" stroke-linejoin="round"></path>
+          <path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" stroke-linecap="round"></path>
+          <path class="mute" d="M16 9.5l5 5M21 9.5l-5 5" stroke-linecap="round"></path>
+        </svg>
+        <span class="label-mono hidden lg:inline"><span class="on-txt">SFX</span><span class="off-txt">MUTE</span></span>
+      </button>
+
+      <!-- Mobile toggle -->
+      <button
+        type="button"
+        id="nav-toggle"
+        class="inline-flex items-center justify-center p-2 text-slate-700 hover:bg-slate-100 md:hidden"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"></path>
-      </svg>
-      <svg
-        class="nav-icon-close h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke-width="1.5"
-        stroke="currentColor"
-        aria-hidden="true"
-      >
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
-      </svg>
-    </button>
+        <span class="sr-only">Toggle navigation menu</span>
+        <svg class="nav-icon-open h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"></path>
+        </svg>
+        <svg class="nav-icon-close h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
   </nav>
 
   <!-- Mobile menu -->
-  <div
-    id="mobile-menu"
-    class="hidden border-t border-slate-200 bg-white md:hidden"
-  >
-    <ul class="container-page space-y-1 py-3">
+  <div id="mobile-menu" class="hidden border-t border-slate-200 bg-white md:hidden">
+    <ul class="container-page py-2">
       {
-        site.nav.map((item) => (
+        site.nav.map((item, i) => (
           <li>
             <a
               href={withBase(item.href)}
               aria-current={isActive(item.href) ? "page" : undefined}
               class:list={[
-                "block rounded-md px-3 py-2 text-base font-medium transition-colors",
-                linkClass(item.href, true),
+                "flex items-baseline gap-3 border-b border-slate-100 py-3 text-base font-medium",
+                isActive(item.href) ? "text-accent-700" : "text-slate-800",
               ]}
             >
+              <span class="label-mono text-slate-400">{String(i + 1).padStart(2, "0")}</span>
               {item.label}
             </a>
           </li>
@@ -136,6 +105,89 @@ const linkClass = (href: string, mobile = false) => {
 </script>
 
 <style>
+  .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+    transition: color 0.2s;
+  }
+  .nav-link:hover {
+    color: #0b0b0b;
+  }
+  @media (max-width: 1023px) {
+    .nav-link {
+      padding: 0.5rem 0.45rem;
+    }
+    .nav-idx {
+      display: none;
+    }
+  }
+  .nav-idx {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: #b4b4b0;
+    transition: color 0.2s;
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: 0.2rem;
+    height: 2px;
+    background: #df6335;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .nav-link:hover::after,
+  .nav-link.is-active::after {
+    transform: scaleX(1);
+  }
+  .nav-link:hover .nav-idx,
+  .nav-link.is-active .nav-idx {
+    color: #df6335;
+  }
+  .nav-link.is-active {
+    color: #0b0b0b;
+  }
+
+  .sfx-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 0.25rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid #e2e8f0;
+    color: #0b0b0b;
+    transition:
+      border-color 0.2s,
+      color 0.2s;
+  }
+  .sfx-btn:hover {
+    border-color: #0b0b0b;
+  }
+  .sfx-btn .mute,
+  .sfx-btn .off-txt {
+    display: none;
+  }
+  :global(html[data-sfx="off"]) .sfx-btn {
+    color: #8a8a86;
+  }
+  :global(html[data-sfx="off"]) .sfx-btn .wave,
+  :global(html[data-sfx="off"]) .sfx-btn .on-txt {
+    display: none;
+  }
+  :global(html[data-sfx="off"]) .sfx-btn .mute,
+  :global(html[data-sfx="off"]) .sfx-btn .off-txt {
+    display: inline;
+  }
   #nav-toggle .nav-icon-close {
     display: none;
   }

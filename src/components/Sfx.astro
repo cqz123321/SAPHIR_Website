@@ -1,0 +1,68 @@
+---
+/*
+  Sfx — wires the synthesised UI sounds (src/lib/sfx.ts) into the whole site.
+
+  Declarative hooks, so pages never import audio code directly:
+    data-sfx="tick"            soft tick on hover (header/footer links get it by default)
+    data-sfx="cursor"          arcade cursor blip on hover (portrait select screens)
+    data-sfx="off"             silence an element that would otherwise tick
+    data-sfx-click="select"    play the "selected" fanfare on click (default: click/go)
+    [data-sfx-toggle]          the speaker button that turns sounds on/off
+*/
+---
+
+<script>
+  import { sfx, isOn, setOn, armUnlock } from "../lib/sfx";
+
+  document.documentElement.dataset.sfx = isOn() ? "on" : "off";
+  armUnlock();
+
+  const HOVER = "[data-sfx], header a, header button, footer a";
+  let current: Element | null = null;
+
+  document.addEventListener("pointerover", (e) => {
+    if ((e as PointerEvent).pointerType === "touch") return;
+    const el = (e.target as Element).closest?.(HOVER);
+    if (el === current) return;
+    current = el;
+    if (!el) return;
+    const kind = el.getAttribute("data-sfx") ?? "tick";
+    if (kind === "cursor") sfx.cursor();
+    else if (kind === "tick") sfx.tick();
+  });
+
+  // Keyboard users hear the cursor too.
+  document.addEventListener("focusin", (e) => {
+    const el = (e.target as Element).closest?.('[data-sfx="cursor"]');
+    if (el) sfx.cursor();
+  });
+
+  document.addEventListener("click", (e) => {
+    const t = e.target as Element;
+    if (t.closest("[data-sfx-toggle]")) return; // handled below
+    const explicit = t.closest("[data-sfx-click]")?.getAttribute("data-sfx-click");
+    if (explicit === "select") return sfx.select();
+    if (explicit === "off") return;
+    const a = t.closest("a[href]") as HTMLAnchorElement | null;
+    if (a) return a.target === "_blank" ? sfx.click() : sfx.go();
+    if (t.closest("button, [role=button], summary")) sfx.click();
+  });
+
+  // Speaker toggle(s)
+  const sync = () => {
+    const on = isOn();
+    document.querySelectorAll<HTMLElement>("[data-sfx-toggle]").forEach((b) => {
+      b.setAttribute("aria-pressed", String(on));
+      b.title = on ? "Sound on — click to mute" : "Sound off — click to unmute";
+    });
+  };
+  document.querySelectorAll<HTMLElement>("[data-sfx-toggle]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const on = !isOn();
+      setOn(on);
+      sync();
+      sfx.toggle(on);
+    }),
+  );
+  sync();
+</script>

@@ -3,54 +3,118 @@ import { withBase } from "../lib/urls";
 import BaseLayout from "../components/BaseLayout.astro";
 import PageHeader from "../components/PageHeader.astro";
 import PubList from "../components/PubList.astro";
-import { getResearchGroups } from "../lib/content";
+import ResearchPlate from "../components/ResearchPlate.astro";
+import { getResearchGroups, getPublications } from "../lib/content";
+
+// The three research directions (same as the homepage, with more detail).
+const directions = [
+  {
+    title: "Soft robotics",
+    plate: "soft",
+    tag: "SOFT / EVERSION",
+    body: [
+      "We build robots from soft, compliant materials so they can bend, grow and squeeze through spaces that rigid machines cannot reach.",
+      "One example is the everting robot, which grows from its tip. Because its body does not slide against its surroundings, it can move through narrow and delicate places, such as passages inside the human body.",
+    ],
+    keys: ["Eversion", "Continuum robots", "Compliant actuation"],
+  },
+  {
+    title: "Sensing & interaction",
+    plate: "tactile",
+    tag: "TACTILE / TAXEL ARRAY",
+    body: [
+      "We develop tactile sensors and sensing skins that let a robot feel where it is being touched and how hard.",
+      "This contact information helps robots handle objects gently, recognise what they are touching, and work safely next to people.",
+    ],
+    keys: ["Tactile sensing", "Sensing skins", "Haptic perception"],
+  },
+  {
+    title: "Robot autonomy",
+    plate: "arm",
+    tag: "AUTONOMY / REACH",
+    body: [
+      "We combine sensing with models of the robot and the world around it, so that robots can decide how to move with less human guidance.",
+      "This covers reaching and grasping, moving through cluttered spaces, and modelling how a tool interacts with its environment.",
+    ],
+    keys: ["Modelling", "Navigation", "Manipulation"],
+  },
+] as const;
 
 // Data-driven: papers group by their `areas` tags. Each area shows its most
 // recent few with a link to the full, area-filtered Publications list.
 const groups = await getResearchGroups(4);
+const total = (await getPublications()).length;
 ---
 
 <BaseLayout
   title="Research"
-  description="An overview of the lab's research topics and methods."
+  description="SAPHIR's research in soft robotics, tactile sensing and robot autonomy."
 >
   <PageHeader
+    index={2}
+    motif="contour"
     eyebrow="What we do"
     title="Research"
-    lead="A short overview of what the lab studies and how. Explore our work by topic or by approach."
-  />
-  <div class="container-page space-y-16 py-12">
-    {
-      groups.map((group) => (
-        <section>
-          <div class="mb-3 h-1 w-12 rounded-full bg-accent-500"></div>
-          <h2 class="font-serif text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{group.title}</h2>
-          <div class="mt-8 space-y-12">
-            {group.areas.map((area) => (
-              <div id={area.slug} class="scroll-mt-24">
-                <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h3 class="font-serif text-2xl font-semibold text-slate-900">{area.label}</h3>
-                  {area.total > area.pubs.length && (
-                    <a
-                      href={withBase(`/publications#${area.slug}`)}
-                      class="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary-700 transition-colors hover:text-accent-600"
-                    >
-                      All {area.total}
-                      <span class="transition-transform group-hover:translate-x-0.5" aria-hidden="true">
-                        &rarr;
-                      </span>
-                    </a>
-                  )}
-                </div>
-                <p class="mt-2 max-w-3xl text-slate-600">{area.blurb}</p>
-                <div class="mt-4">
-                  <PubList pubs={area.pubs} />
-                </div>
-              </div>
-            ))}
+    lead="Soft bodies, a sense of touch, and the intelligence to use them. Three directions that meet whenever a robot makes physical contact with the world."
+    meta="03 directions"
+  >
+    <Fragment slot="readout">Move the cursor to press the field</Fragment>
+  </PageHeader>
+
+  <div class="container-page py-20">
+    <div class="space-y-24">
+      {directions.map((d, i) => (
+        <section class="dir grid items-center gap-10 lg:grid-cols-2 lg:gap-16" id={d.plate}>
+          <div class:list={[i % 2 === 1 && "lg:order-2"]}>
+            <ResearchPlate kind={d.plate} index={i + 1} tag={d.tag} />
+          </div>
+          <div>
+            <p class="label-mono text-accent-600">0{i + 1} — Direction</p>
+            <h2 class="mt-3 font-serif text-4xl tracking-tight sm:text-5xl">{d.title}</h2>
+            <div class="mt-6 space-y-4 text-lg leading-relaxed text-slate-600">
+              {d.body.map((p) => <p>{p}</p>)}
+            </div>
+            <ul class="mt-7 flex flex-wrap gap-2">
+              {d.keys.map((k) => <li class="label-mono border border-slate-300 px-2.5 py-1.5 text-slate-600">{k}</li>)}
+            </ul>
           </div>
         </section>
-      ))
-    }
+      ))}
+    </div>
   </div>
+
+  {
+    groups.length > 0 && (
+      <section class="border-t border-slate-200 bg-neutral-50">
+        <div class="container-page space-y-16 py-20">
+          <div>
+            <p class="label-mono text-accent-600">From our papers</p>
+            <h2 class="mt-3 font-serif text-4xl tracking-tight">Work by topic</h2>
+            <p class="mt-3 text-slate-600">{total} publications, grouped by the topics they address.</p>
+          </div>
+          {groups.map((group) => (
+            <section>
+              <h3 class="flex items-baseline gap-4 border-b border-slate-900 pb-3 font-serif text-2xl tracking-tight">{group.title}</h3>
+              <div class="mt-8 space-y-12">
+                {group.areas.map((area) => (
+                  <div id={area.slug} class="scroll-mt-24">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <h4 class="font-serif text-xl text-slate-900">{area.label}</h4>
+                      <a href={withBase(`/publications#${area.slug}`)} class="label-mono text-slate-500 transition-colors hover:text-accent-600" data-sfx="tick">
+                        All {area.total} &rarr;
+                      </a>
+                    </div>
+                    <p class="mt-2 max-w-3xl text-slate-600">{area.blurb}</p>
+                    <div class="mt-4">
+                      <PubList pubs={area.pubs} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>

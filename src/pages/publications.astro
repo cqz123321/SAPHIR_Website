@@ -9,7 +9,9 @@ const areaCounts = await getAreaCounts();
 const areaChips = FILTER_GROUPS.flatMap((g) => g.slugs);
 
 const chip =
-  "rounded-full border border-slate-300 px-3 py-1 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 data-[active]:border-primary-600 data-[active]:bg-primary-600 data-[active]:text-white";
+  "label-mono border border-slate-300 px-3 py-2 text-slate-600 transition-colors hover:border-slate-900 hover:text-slate-900 data-[active]:border-slate-900 data-[active]:bg-slate-900 data-[active]:text-white";
+const years = pubs.map((p) => p.data.year);
+const since = years.length ? Math.min(...years) : undefined;
 
 const filters = [
   { key: "all", label: "All" },
@@ -25,16 +27,21 @@ const filters = [
   description="Peer-reviewed publications from the lab. Filter by role or research area, sort by date or citations."
 >
   <PageHeader
+    index={3}
+    motif="stream"
     eyebrow="Research output"
     title="Publications"
+    meta={`${pubs.length} papers${since ? ` · since ${since}` : ""}`}
     lead="Peer-reviewed work from the lab and its collaborators. Filter by role or by research area, sort by date or citation count; counts are from Google Scholar."
-  />
-  <div class="container-page py-12">
+  >
+    <Fragment slot="readout">Indexed · Crossref / Google Scholar</Fragment>
+  </PageHeader>
+  <div class="container-page py-14 pb-24">
     <div class="mb-8 space-y-3">
       <button
         type="button"
         id="filters-toggle"
-        class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 md:hidden"
+        class="label-mono inline-flex items-center gap-2 border border-slate-300 px-3 py-2 text-slate-700 hover:border-slate-900 md:hidden"
         aria-controls="pub-filters"
         aria-expanded="false"
       >
@@ -48,7 +55,7 @@ const filters = [
         <div class="flex flex-wrap items-center gap-2">
           {
             filters.map((f) => (
-              <button class={chip} data-filter={f.key} data-active={f.key === "all" ? "" : undefined}>
+              <button data-sfx="tick" class={chip} data-filter={f.key} data-active={f.key === "all" ? "" : undefined}>
                 {f.label} <span data-count />
               </button>
             ))
@@ -56,11 +63,11 @@ const filters = [
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <span class="mr-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">Area</span>
-        <button class={chip} data-area="all" data-active>All areas</button>
+          <span class="label-mono mr-1 text-accent-600">Area</span>
+        <button data-sfx="tick" class={chip} data-area="all" data-active>All areas</button>
         {
           areaChips.map((slug) => (
-            <button class={chip} data-area={slug}>
+            <button data-sfx="tick" class={chip} data-area={slug}>
               {AREA_LABELS[slug]}{" "}
               <span class="opacity-70">({areaCounts[slug] ?? 0})</span>
             </button>
@@ -74,14 +81,14 @@ const filters = [
           type="search"
           id="pub-search"
           placeholder="Search title or author…"
-          class="min-w-56 flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
+          class="min-w-56 flex-1 border-0 border-b-2 border-slate-900 bg-transparent px-1 py-2 text-base placeholder:text-slate-400 focus:border-accent-500 focus:outline-none"
         />
         <div class="flex items-center gap-2 text-sm text-slate-600">
-          <span>Sort</span>
-          <button class={chip} data-sort="date" data-active>Newest</button>
-          <button class={chip} data-sort="citations">Most cited</button>
+          <span class="label-mono text-accent-600">Sort</span>
+          <button data-sfx="tick" class={chip} data-sort="date" data-active>Newest</button>
+          <button data-sfx="tick" class={chip} data-sort="citations">Most cited</button>
         </div>
-        <span id="pub-count" class="text-sm text-slate-600"></span>
+        <span id="pub-count" class="label-mono text-slate-500"></span>
       </div>
     </div>
 

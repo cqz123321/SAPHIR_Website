@@ -37,38 +37,31 @@ const badges = [
 ].filter(Boolean) as { label: string; href: string; color: string; d: string }[];
 ---
 
-<div class="grid min-w-0 items-start gap-6 sm:grid-cols-[9rem_minmax(0,1fr)]">
-<div class="text-center">
-  <a href={withBase(`/people/${person.id}`)} class="group block">
-    <div
-      class="mx-auto h-44 w-36 "
-    >
+<div class="pcard grid min-w-0 items-start gap-5 sm:grid-cols-[8rem_minmax(0,1fr)]">
+<div>
+  <a href={withBase(`/people/${person.id}`)} class="group block" data-sfx="tick">
+    <div class="pcard-img relative aspect-square w-32 overflow-hidden bg-slate-100">
       {
         headshot ? (
           <Image
             src={headshot}
             alt={name}
             width={256}
-            
-            class="h-full w-full object-contain"
+            height={256}
+            class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div class="flex h-full w-full items-center justify-center bg-primary-100 text-2xl font-semibold text-primary-700">
+          <div class="flex h-full w-full items-center justify-center bg-primary-100 font-display text-3xl text-primary-700">
             {initials}
           </div>
         )
       }
+      <span class="pointer-events-none absolute inset-0 border-2 border-accent-500 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true"></span>
     </div>
-    <h3
-      class="mt-3 font-serif text-base text-slate-900 group-hover:text-primary-700"
-    >
-      {name}
-    </h3>
-    <p class="text-sm text-slate-600">{role}</p>
   </a>
   {
     badges.length > 0 && (
-      <div class="mt-1.5 flex justify-center gap-2.5">
+      <div class="mt-2 flex gap-2.5">
         {badges.map((b) => (
           <a
             href={b.href}
@@ -89,5 +82,11 @@ const badges = [
   }
 </div>
 
-<div class="prose-content min-w-0 break-words space-y-3 text-sm leading-relaxed text-slate-700"><Content /></div>
+<div class="min-w-0">
+  <a href={withBase(`/people/${person.id}`)} class="group inline-block">
+    <h3 class="font-serif text-xl tracking-tight text-slate-900 transition-colors group-hover:text-accent-700">{name}</h3>
+  </a>
+  <p class="label-mono mt-1 text-slate-500">{role}</p>
+  <div class="prose-content mt-3 min-w-0 break-words space-y-3 text-sm leading-relaxed text-slate-700"><Content /></div>
+</div>
 </div>

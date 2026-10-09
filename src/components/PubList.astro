@@ -69,7 +69,7 @@ const shortName = (name: string) => name.split(",")[0].trim();
 const anyMarks = pubs.some((p) => starsFor(p).size > 0);
 ---
 
-<ol class="divide-y divide-slate-100" id="pub-list">
+<ol class="divide-y divide-slate-200 border-y border-slate-200" id="pub-list">
   {
     pubs.map((p) => {
       const d = p.data;
@@ -88,7 +88,7 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
       const collaboration = !soleFirst && !soleLast;
       return (
         <li
-          class="py-5"
+          class="pub group relative py-6 pl-0 sm:pl-20"
           data-pub
           data-year={d.year}
           data-citations={typeof d.citations === "number" ? d.citations : -1}
@@ -100,13 +100,14 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
           data-areas={d.areas.join(" ")}
           data-search={search}
         >
-          <p class="font-medium text-slate-900">
+          <span class="label-mono absolute top-7 left-0 hidden text-slate-400 transition-colors group-hover:text-accent-600 sm:block" aria-hidden="true">{d.year}</span>
+          <p class="font-serif text-lg leading-snug text-slate-900">
             {link ? (
               <a
                 href={link}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="hover:text-primary-700 hover:underline"
+                class="transition-colors hover:text-accent-700"
               >
                 {d.title}
               </a>
@@ -128,7 +129,7 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
                     {person ? (
                       <a
                         href={withBase(`/people/${person.slug}`)}
-                        class="font-medium text-slate-900 hover:text-primary-700 hover:underline"
+                        class="font-medium text-slate-900 hover:text-accent-700 hover:underline"
                       >
                         {a}
                       </a>
@@ -145,7 +146,7 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
                 type="button"
                 data-authors-toggle
                 data-more={`… +${d.authors.length - 12} more`}
-                class="ml-1 whitespace-nowrap text-primary-700 hover:underline"
+                class="ml-1 whitespace-nowrap text-slate-900 underline decoration-accent-500 hover:text-accent-700"
               >
                 … +{d.authors.length - 12} more
               </button>
@@ -172,10 +173,10 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
                       alt={m.name}
                       width={64}
                       height={64}
-                      class="h-10 w-8 object-contain"
+                      class="h-8 w-8 object-cover"
                     />
                   )}
-                  <span class="text-xs text-slate-600 group-hover:text-primary-700">
+                  <span class="text-xs text-slate-600 group-hover:text-accent-700">
                     {shortName(m.name)}
                   </span>
                 </a>
@@ -183,29 +184,29 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
             </div>
           )}
 
-          <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <div class="mt-3 flex flex-wrap items-center gap-2">
             {typeof d.citations === "number" && (
-              <span class="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-800">
+              <span class="label-mono border border-accent-300 px-2 py-1 text-accent-700">
                 Cited by {d.citations}
               </span>
             )}
             {menteeLed && (
-              <span class="rounded-full bg-accent-100 px-2 py-0.5 font-medium text-accent-700">
+              <span class="label-mono border border-slate-300 px-2 py-1 text-slate-600">
                 Mentee-led
               </span>
             )}
             {d.piFirstOrSenior && (
-              <span class="rounded-full bg-primary-100 px-2 py-0.5 font-medium text-primary-700">
+              <span class="label-mono border border-slate-300 px-2 py-1 text-slate-600">
                 PI first/senior
               </span>
             )}
             {collaboration && (
-              <span class="rounded-full bg-slate-200 px-2 py-0.5 font-medium text-slate-600">
+              <span class="label-mono border border-slate-200 px-2 py-1 text-slate-500">
                 Collaboration
               </span>
             )}
             {d.openAccess && (
-              <span class="rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">
+              <span class="label-mono border border-emerald-300 px-2 py-1 text-emerald-700">
                 Open access
               </span>
             )}
@@ -214,9 +215,9 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
                 href={`https://doi.org/${d.doi}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-700 hover:underline"
+                class="label-mono px-1 py-1 text-slate-900 underline decoration-accent-500 underline-offset-4 hover:text-accent-700"
               >
-                DOI
+                DOI ↗
               </a>
             )}
             {d.scholarUrl && (
@@ -224,9 +225,9 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
                 href={d.scholarUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-primary-700 hover:underline"
+                class="label-mono px-1 py-1 text-slate-900 underline decoration-accent-500 underline-offset-4 hover:text-accent-700"
               >
-                Scholar
+                Scholar ↗
               </a>
             )}
           </div>

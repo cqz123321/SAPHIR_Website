@@ -1,19 +1,17 @@
 ---
-import { Image } from "astro:assets";
 import { withBase } from "../lib/urls";
 import { site } from "../data/site";
 import { getGroupedPeople } from "../lib/content";
 import BaseLayout from "../components/BaseLayout.astro";
 import TaxelField from "../components/TaxelField.astro";
 import ResearchPlate from "../components/ResearchPlate.astro";
+import PeopleSelect from "../components/PeopleSelect.astro";
 
 const official = "https://www.sems.qmul.ac.uk/research/groups/softrobotics/";
 
 const team = (await getGroupedPeople())
   .flatMap((g) => g.people)
   .filter((p) => p.data.status === "current");
-const withPhoto = team.filter((p) => p.data.headshot);
-const stripCols = Math.min(withPhoto.length, 13);
 
 const themes = [
   {
@@ -81,10 +79,10 @@ const spec = [
         </p>
 
         <div class="hero-actions mt-9 flex flex-wrap gap-3">
-          <a href="#research" class="bg-white px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-accent-100">
+          <a href="#research" data-sfx="tick" class="bg-white px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-accent-100">
             Explore our research
           </a>
-          <a href={withBase("/people")} class="border border-white/30 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white/5">
+          <a href={withBase("/people")} data-sfx="tick" class="border border-white/30 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-white hover:bg-white/5">
             Meet the team
           </a>
         </div>
@@ -186,26 +184,13 @@ const spec = [
           <h2 class="mt-3 font-serif text-4xl tracking-tight text-white">Meet the people behind SAPHIR</h2>
           <p class="mt-3 text-neutral-400">{team.length} team members · Faculty, postdoctoral researchers and PhD students.</p>
         </div>
-        <a href={withBase("/people")} class="shrink-0 bg-white px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-accent-100">Our people →</a>
+        <a href={withBase("/people")} data-sfx="tick" class="shrink-0 bg-white px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-accent-100">Our people →</a>
       </div>
 
-      <ul class="strip mt-10 grid gap-1.5" style={`--cols:${stripCols}`}>
-        {withPhoto.map((p) => (
-          <li>
-            <a href={withBase(`/people/${p.id}`)} class="tile group relative block aspect-square overflow-hidden bg-neutral-900" aria-label={p.data.name}>
-              <Image
-                src={p.data.headshot!}
-                alt=""
-                width={240}
-                height={240}
-                class="h-full w-full object-cover opacity-80 grayscale transition duration-500 group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0"
-              />
-              <span class="tile-name label-mono">{p.data.name}</span>
-              <span class="absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-accent-500 transition-transform duration-300 group-hover:scale-x-100" aria-hidden="true"></span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div class="mt-10">
+        <PeopleSelect people={team} variant="strip" />
+      </div>
+      <p class="label-mono mt-4 text-neutral-600">Select a member ↑</p>
     </div>
   </section>
 </BaseLayout>
@@ -337,41 +322,6 @@ const spec = [
     to {
       transform: scaleY(1);
     }
-  }
-
-  /* ---------- people strip ---------- */
-  .strip {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  @media (min-width: 640px) {
-    .strip {
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-    }
-  }
-  @media (min-width: 1024px) {
-    .strip {
-      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-    }
-  }
-  .tile-name {
-    position: absolute;
-    inset: auto 0 0 0;
-    padding: 1.5rem 0.4rem 0.45rem;
-    font-size: 0.56rem;
-    letter-spacing: 0.08em;
-    line-height: 1.3;
-    color: #fff;
-    background: linear-gradient(to top, rgb(0 0 0 / 0.85), transparent);
-    opacity: 0;
-    transform: translateY(4px);
-    transition:
-      opacity 0.3s,
-      transform 0.3s;
-  }
-  .tile:hover .tile-name,
-  .tile:focus-visible .tile-name {
-    opacity: 1;
-    transform: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
