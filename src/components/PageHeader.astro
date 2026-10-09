@@ -8,22 +8,25 @@
   the `readout` slot fills the bottom-right.
 */
 import HeaderMotif from "./HeaderMotif.astro";
+import type { MotifKind } from "../lib/motifs";
 
 interface Props {
   eyebrow?: string;
   title: string;
   lead?: string;
   index?: number;
-  motif?: "scan" | "contour" | "stream" | "reticle" | "film" | "radar" | "wave" | "noise";
+  motif?: MotifKind;
   meta?: string;
+  /** network motif: number of nodes */
+  count?: number;
 }
-const { eyebrow, title, lead, index, motif = "contour", meta } = Astro.props;
+const { eyebrow, title, lead, index, motif = "terrain", meta, count } = Astro.props;
 const idx = index ? String(index).padStart(2, "0") : "";
 const chars = [...title];
 ---
 
 <header class="page-hero relative overflow-hidden bg-[#0b0b0b] text-white">
-  <HeaderMotif kind={motif} />
+  <HeaderMotif kind={motif} count={count} />
   <div class="ph-frame container-page relative flex flex-col justify-between">
     <div class="ph-meta flex items-center justify-between gap-4 border-b border-white/15 pb-3 text-neutral-400">
       <span class="label-mono">SAPHIR{idx && <span class="text-neutral-600"> / {idx}</span>}</span>

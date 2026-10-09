@@ -6,7 +6,7 @@
     variant="screen"  a portrait grid + a large preview panel (People page)
 
   Portraits are in full colour. Hovering/focusing one frames it in orange with a
-  "1P" cursor and dims the others; clicking plays the select sound, flashes the
+  corner brackets and dims the others; clicking plays the select sound, flashes the
   tile, then opens that person's profile. Sounds come from Sfx.astro via the
   data-sfx / data-sfx-click hooks.
 */
@@ -52,7 +52,6 @@ const bigs =
           ))}
           <span class="pv-flash"></span>
           <span class="pv-corner tl"></span><span class="pv-corner tr"></span><span class="pv-corner br"></span><span class="pv-corner bl"></span>
-          <span class="pv-tag label-mono">1P</span>
         </div>
         <div class="pv-info">
           <p class="label-mono text-accent-400"><span data-pv-no>No. 01</span> · <span data-pv-group>{list[0]?.data.group}</span></p>
@@ -81,7 +80,6 @@ const bigs =
         >
           <Image src={p.data.headshot!} alt="" width={240} height={240} class="tile-img" />
           <span class="tile-frame" aria-hidden="true"></span>
-          <span class="tile-tag label-mono" aria-hidden="true">1P</span>
           <span class="tile-name" aria-hidden="true">{p.data.name}</span>
           <span class="tile-flash" aria-hidden="true"></span>
         </a>
@@ -211,21 +209,6 @@ const bigs =
       linear-gradient(#df6335, #df6335) bottom right / 14px 4px no-repeat,
       linear-gradient(#df6335, #df6335) bottom right / 4px 14px no-repeat;
   }
-  .tile-tag {
-    position: absolute;
-    top: 0;
-    left: 0;
-    padding: 2px 5px;
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: #0b0b0b;
-    background: #df6335;
-    opacity: 0;
-    transform: translateY(-100%);
-    transition:
-      transform 0.2s,
-      opacity 0.2s;
-  }
   .tile-name {
     position: absolute;
     inset: auto 0 0 0;
@@ -246,11 +229,6 @@ const bigs =
   .tile.is-cursor .tile-frame,
   .tile:focus-visible .tile-frame {
     opacity: 1;
-  }
-  .tile.is-cursor .tile-tag,
-  .tile:focus-visible .tile-tag {
-    opacity: 1;
-    transform: none;
   }
   .tile.is-cursor .tile-name,
   .tile:focus-visible .tile-name {
@@ -398,15 +376,6 @@ const bigs =
     left: 10px;
     border-bottom-width: 2px;
     border-left-width: 2px;
-  }
-  .pv-tag {
-    position: absolute;
-    top: 10px;
-    left: 40px;
-    padding: 2px 6px;
-    font-weight: 700;
-    color: #0b0b0b;
-    background: #df6335;
   }
   .pv-name {
     margin-top: 0.5rem;

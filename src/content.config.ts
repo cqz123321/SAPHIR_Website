@@ -41,6 +41,13 @@ const people = defineCollection({
         .default({}),
       order: z.number().default(0),
       featured: z.boolean().default(false),
+      // Alumni details (shown in the compact Alumni table on the People page).
+      // Use with `status: alumni` and `group: Alumni`; all optional.
+      programme: z.string().optional(), //        e.g. "PhD", "MSc", "MEng"
+      project: z.string().optional(), //          research project title
+      supervisors: z.string().optional(), //      supervisor name(s)
+      year: z.number().optional(), //             graduation year
+      currentPosition: z.string().optional(), //  current role or institution
     }),
 });
 

@@ -3,93 +3,231 @@
   HeaderMotif — the animated background of an inner-page header. One canvas,
   a different drawing per page, all in the same quiet line-art language:
 
-    scan     People        — slot grid with a slow scan band (select screen)
-    contour  Research      — breathing pressure contours; follows the cursor
-    stream   Publications  — drifting columns of years / DOI fragments
+    network  People        — one node per member, joined into a soft mesh that
+                             gives way under the cursor (a mass–spring body)
+    terrain  Research      — a continuous stiffness map: coloured bands from soft
+                             to stiff with contour lines; the cursor is a probe
+                             that finds a stiff inclusion
+    stream   Publications  — drifting columns of years / venues / DOI prefixes
     reticle  Figures       — measurement grid + crosshair with live coordinates
     film     Lab Life      — a film strip sliding past
     radar    Contact       — range rings, a sweep, and a ping at Mile End
-    wave     Profiles      — three signal traces drifting in and out of phase
+    ribbon   Profiles      — a band of contour lines (like the logo's), shaped
+                             by the person's slug so every profile is unique
     noise    404           — faint static and a rolling tear
 
   Pauses off-screen; draws a single still frame for prefers-reduced-motion.
   Fills its positioned parent and listens for the pointer on that parent.
 */
+import type { MotifKind } from "../lib/motifs";
 interface Props {
-  kind: "scan" | "contour" | "stream" | "reticle" | "film" | "radar" | "wave" | "noise";
+  kind: MotifKind;
+  /** ribbon: any string (e.g. a person's slug) — shapes the pattern. */
+  seed?: string;
+  /** network: number of nodes (e.g. team size). */
+  count?: number;
+  /** terrain: draw the soft→stiff colour key (top right). */
+  legend?: boolean;
 }
-const { kind } = Astro.props;
+const { kind, seed = "", count = 13, legend = true } = Astro.props;
 ---
 
-<canvas class="header-motif" data-kind={kind} aria-hidden="true"></canvas>
+<canvas
+  class="header-motif"
+  data-kind={kind}
+  data-seed={seed}
+  data-count={count}
+  data-legend={legend ? "1" : "0"}
+  aria-hidden="true"></canvas>
 
 <script>
   type Ctx = CanvasRenderingContext2D;
-  type State = { w: number; h: number; t: number; mx: number; my: number; hover: boolean };
+  type State = { w: number; h: number; t: number; mx: number; my: number; hover: boolean; seed: number; n: number; legend: boolean; mem: any };
 
   const O = (a: number) => `rgba(223,99,53,${a})`; // accent
   const Wt = (a: number) => `rgba(255,255,255,${a})`;
   const MONO = 'ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
 
   // ---------- motifs ----------
-  const scan = (c: Ctx, s: State) => {
-    const cell = s.w < 640 ? 44 : 64, gap = 8;
-    const cols = Math.ceil(s.w / (cell + gap)) + 1, rows = Math.ceil(s.h / (cell + gap)) + 1;
-    const band = ((s.t * 0.12) % 1.4 - 0.2) * s.h;
-    for (let j = 0; j < rows; j++)
-      for (let i = 0; i < cols; i++) {
-        const x = i * (cell + gap) + 4, y = j * (cell + gap) + 4;
-        const d = Math.abs(y + cell / 2 - band);
-        const lit = Math.max(0, 1 - d / 90);
-        c.strokeStyle = lit > 0.05 ? O(0.15 + lit * 0.6) : Wt(0.07);
-        c.lineWidth = 1;
-        c.strokeRect(x + 0.5, y + 0.5, cell, cell);
-        // corner brackets on a slowly wandering "cursor" slot
-      }
-    const ci = Math.floor((Math.sin(s.t * 0.4) * 0.5 + 0.5) * (cols - 2)) + 1;
-    const cj = Math.floor((Math.sin(s.t * 0.27 + 1) * 0.5 + 0.5) * (rows - 2));
-    const x = ci * (cell + gap) + 4, y = cj * (cell + gap) + 4, k = 10;
-    c.strokeStyle = O(0.9);
-    c.lineWidth = 2;
-    c.beginPath();
-    c.moveTo(x, y + k); c.lineTo(x, y); c.lineTo(x + k, y);
-    c.moveTo(x + cell - k, y); c.lineTo(x + cell, y); c.lineTo(x + cell, y + k);
-    c.moveTo(x + cell, y + cell - k); c.lineTo(x + cell, y + cell); c.lineTo(x + cell - k, y + cell);
-    c.moveTo(x + k, y + cell); c.lineTo(x, y + cell); c.lineTo(x, y + cell - k);
-    c.stroke();
-    c.fillStyle = O(1);
-    c.font = `600 10px ${MONO}`;
-    c.fillText("1P", x + 3, y - 5);
-    // scan band
-    const g = c.createLinearGradient(0, band - 60, 0, band + 60);
-    g.addColorStop(0, Wt(0)); g.addColorStop(0.5, Wt(0.05)); g.addColorStop(1, Wt(0));
-    c.fillStyle = g;
-    c.fillRect(0, band - 60, s.w, 120);
+  // Seeded PRNG (mulberry32) so layouts are stable per page / person.
+  const rng = (seed: number) => () => {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 
-  const contour = (c: Ctx, s: State) => {
-    const cx = s.hover ? s.mx : s.w * (0.72 + 0.08 * Math.sin(s.t * 0.3));
-    const cy = s.hover ? s.my : s.h * (0.5 + 0.12 * Math.sin(s.t * 0.41));
-    const centres = [
-      { x: cx, y: cy, n: 11, hot: true },
-      { x: s.w * 0.92, y: s.h * 0.15, n: 6, hot: false },
-    ];
-    for (const ce of centres)
-      for (let k = 1; k <= ce.n; k++) {
-        const r0 = k * (s.w < 640 ? 14 : 22);
-        c.beginPath();
-        for (let a = 0; a <= Math.PI * 2 + 0.01; a += Math.PI / 60) {
-          const r = r0 + Math.sin(a * 3 + s.t * 0.8 + k * 0.4) * k * 1.6 + Math.sin(a * 5 - s.t * 0.5) * k * 0.9;
-          const x = ce.x + Math.cos(a) * r * 1.25, y = ce.y + Math.sin(a) * r;
-          a === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
-        }
-        const f = 1 - k / (ce.n + 1);
-        c.strokeStyle = ce.hot && k <= 3 ? O(0.35 + f * 0.5) : Wt(0.05 + f * 0.12);
-        c.lineWidth = ce.hot && k === 1 ? 1.5 : 1;
-        c.stroke();
+  const network = (c: Ctx, s: State) => {
+    type N = { hx: number; hy: number; x: number; y: number; vx: number; vy: number; ph: number; r: number; hot: boolean };
+    const key = `${s.w}x${s.h}`;
+    if (!s.mem || s.mem.key !== key) {
+      const R = rng(7 + s.n);
+      const nodes: N[] = [];
+      for (let i = 0; i < s.n; i++) {
+        // spread over the right two-thirds, on a jittered ellipse-ish cloud
+        const a = (i / s.n) * Math.PI * 2 + R() * 0.6;
+        const rr = 0.35 + R() * 0.65;
+        const hx = s.w * (0.66 + 0.26 * rr * Math.cos(a)), hy = s.h * (0.5 + 0.36 * rr * Math.sin(a));
+        nodes.push({ hx, hy, x: hx, y: hy, vx: 0, vy: 0, ph: R() * 6.28, r: i === 0 ? 4 : 2.2 + R() * 1.4, hot: i === 0 || R() < 0.18 });
       }
-    c.fillStyle = O(0.9);
-    c.beginPath(); c.arc(cx, cy, 2.5, 0, Math.PI * 2); c.fill();
+      // each node links to its 3 nearest neighbours → a soft mesh
+      const links: [number, number, number][] = [];
+      const seen = new Set<string>();
+      nodes.forEach((p, i) => {
+        nodes
+          .map((q, j) => ({ j, d: Math.hypot(p.hx - q.hx, p.hy - q.hy) }))
+          .filter((o) => o.j !== i)
+          .sort((u, v) => u.d - v.d)
+          .slice(0, 3)
+          .forEach(({ j, d }) => {
+            const k = i < j ? `${i}-${j}` : `${j}-${i}`;
+            if (!seen.has(k)) { seen.add(k); links.push([i, j, d]); }
+          });
+      });
+      s.mem = { key, nodes, links };
+    }
+    const { nodes, links } = s.mem as { nodes: N[]; links: [number, number, number][] };
+    // physics: spring to a slowly breathing home, springs along links, cursor pushes
+    for (const p of nodes) {
+      const tx = p.hx + Math.sin(s.t * 0.35 + p.ph) * 14, ty = p.hy + Math.cos(s.t * 0.28 + p.ph) * 10;
+      p.vx += (tx - p.x) * 0.012; p.vy += (ty - p.y) * 0.012;
+      if (s.hover) {
+        const dx = p.x - s.mx, dy = p.y - s.my, d2 = dx * dx + dy * dy, R2 = 140 * 140;
+        if (d2 < R2) { const f = (1 - d2 / R2) * 2.2 / Math.sqrt(d2 + 1); p.vx += dx * f; p.vy += dy * f; }
+      }
+    }
+    for (const [i, j, L] of links) {
+      const a = nodes[i], b = nodes[j];
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
+      const f = ((d - L) / d) * 0.02;
+      a.vx += dx * f; a.vy += dy * f; b.vx -= dx * f; b.vy -= dy * f;
+    }
+    for (const p of nodes) { p.vx *= 0.86; p.vy *= 0.86; p.x += p.vx; p.y += p.vy; }
+    // draw
+    for (const [i, j, L] of links) {
+      const a = nodes[i], b = nodes[j];
+      const stretch = Math.min(1, Math.abs(Math.hypot(b.x - a.x, b.y - a.y) - L) / 30);
+      c.strokeStyle = stretch > 0.05 ? O(0.15 + stretch * 0.6) : Wt(0.13);
+      c.lineWidth = 1;
+      c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+    }
+    for (const p of nodes) {
+      c.fillStyle = p.hot ? O(0.95) : Wt(0.7);
+      c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = p.hot ? O(0.25) : Wt(0.08);
+      c.beginPath(); c.arc(p.x, p.y, p.r + 6 + Math.sin(s.t * 1.2 + p.ph) * 2, 0, Math.PI * 2); c.stroke();
+    }
+  };
+
+  // soft → stiff colour key: transparent → deep brown → signal orange → pale
+  const STOPS: [number, number, number, number, number][] = [
+    [0.0, 11, 11, 11, 0],
+    [0.3, 40, 22, 16, 0.55],
+    [0.55, 110, 46, 22, 0.8],
+    [0.78, 223, 99, 53, 0.92],
+    [1.0, 246, 196, 170, 0.9],
+  ];
+  const cmap = (v: number) => {
+    v = Math.max(0, Math.min(1, v));
+    for (let k = 1; k < STOPS.length; k++)
+      if (v <= STOPS[k][0]) {
+        const [a0, r0, g0, b0, al0] = STOPS[k - 1], [a1, r1, g1, b1, al1] = STOPS[k];
+        const u = (v - a0) / (a1 - a0);
+        return [r0 + (r1 - r0) * u, g0 + (g1 - g0) * u, b0 + (b1 - b0) * u, al0 + (al1 - al0) * u];
+      }
+    return STOPS[STOPS.length - 1].slice(1);
+  };
+
+  const terrain = (c: Ctx, s: State) => {
+    const cs = s.w < 640 ? 7 : 6, LV = 14;
+    const gw = Math.ceil(s.w / cs) + 1, gh = Math.ceil(s.h / cs) + 1;
+    if (!s.mem || s.mem.gw !== gw || s.mem.gh !== gh) {
+      const off = document.createElement("canvas");
+      off.width = gw; off.height = gh;
+      s.mem = { gw, gh, f: new Float32Array(gw * gh), off, octx: off.getContext("2d")!, img: new ImageData(gw, gh), probe: 0 };
+    }
+    const m = s.mem;
+    const H = s.h, t = s.t;
+    // hills (x, y as fractions of width/height; r as fraction of height)
+    const hills = [
+      [0.72, 0.45, 0.92, 0.19], [0.88, 0.22, 0.7, 0.13], [0.9, 0.78, 0.85, 0.2],
+      [0.55, 0.85, 0.45, 0.12], [0.8, 0.72, -0.4, 0.09], [0.45, 0.2, 0.3, 0.13],
+    ].map(([x, y, a, r], i) => [
+      (x + 0.025 * Math.sin(t * 0.18 + i)) * s.w,
+      (y + 0.03 * Math.cos(t * 0.15 + i * 1.3)) * H, a, (r * H) ** 2 * 2,
+    ]);
+    m.probe += ((s.hover ? 1 : 0) - m.probe) * 0.06;
+    const pr2 = (0.075 * H) ** 2 * 2;
+    for (let j = 0; j < gh; j++) {
+      const y = j * cs;
+      for (let i = 0; i < gw; i++) {
+        const x = i * cs;
+        let v = 0.08 + 0.07 * Math.sin(x / H * 7 + t * 0.25) * Math.sin(y / H * 6 - t * 0.2) + 0.035 * Math.sin((x + y) / H * 19);
+        for (const [hx, hy, a, r2] of hills) { const dx = x - hx, dy = y - hy; v += a * Math.exp(-(dx * dx + dy * dy) / r2); }
+        if (m.probe > 0.01) { const dx = x - s.mx, dy = y - s.my; v += 0.75 * m.probe * Math.exp(-(dx * dx + dy * dy) / pr2); }
+        m.f[j * gw + i] = v;
+      }
+    }
+    // filled colour bands (quantised → terrain-map steps), upscaled smoothly
+    const d = m.img.data;
+    for (let k = 0; k < gw * gh; k++) {
+      const q = Math.floor(Math.max(0, Math.min(0.999, m.f[k])) * LV) / LV;
+      const [r, g, b, a] = cmap(q);
+      d[k * 4] = r; d[k * 4 + 1] = g; d[k * 4 + 2] = b; d[k * 4 + 3] = a * 255;
+    }
+    m.octx.putImageData(m.img, 0, 0);
+    c.imageSmoothingEnabled = true;
+    c.drawImage(m.off, 0, 0, gw * cs, gh * cs);
+    // contour lines (marching squares), every 4th one stronger like a topo map
+    for (let L = 1; L < LV; L++) {
+      const iso = L / LV;
+      c.strokeStyle = L % 4 === 0 ? Wt(0.32) : Wt(0.1);
+      c.lineWidth = L % 4 === 0 ? 1.1 : 0.8;
+      c.beginPath();
+      for (let j = 0; j < gh - 1; j++)
+        for (let i = 0; i < gw - 1; i++) {
+          const a = m.f[j * gw + i], b = m.f[j * gw + i + 1], cc = m.f[(j + 1) * gw + i + 1], dd = m.f[(j + 1) * gw + i];
+          const idx = (a > iso ? 8 : 0) | (b > iso ? 4 : 0) | (cc > iso ? 2 : 0) | (dd > iso ? 1 : 0);
+          if (idx === 0 || idx === 15) continue;
+          const x = i * cs, y = j * cs;
+          const T = [x + cs * ((iso - a) / (b - a)), y];
+          const R = [x + cs, y + cs * ((iso - b) / (cc - b))];
+          const B = [x + cs * ((iso - dd) / (cc - dd)), y + cs];
+          const Lf = [x, y + cs * ((iso - a) / (dd - a))];
+          const seg = (p: number[], q: number[]) => { c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); };
+          switch (idx) {
+            case 1: case 14: seg(Lf, B); break;
+            case 2: case 13: seg(B, R); break;
+            case 3: case 12: seg(Lf, R); break;
+            case 4: case 11: seg(T, R); break;
+            case 5: seg(Lf, T); seg(B, R); break;
+            case 6: case 9: seg(T, B); break;
+            case 7: case 8: seg(Lf, T); break;
+            case 10: seg(T, R); seg(Lf, B); break;
+          }
+        }
+      c.stroke();
+    }
+    // probe marker
+    if (m.probe > 0.05) {
+      c.strokeStyle = Wt(0.8 * m.probe);
+      c.lineWidth = 1;
+      c.beginPath(); c.arc(s.mx, s.my, 10, 0, Math.PI * 2); c.moveTo(s.mx - 16, s.my); c.lineTo(s.mx - 6, s.my); c.moveTo(s.mx + 6, s.my); c.lineTo(s.mx + 16, s.my); c.stroke();
+    }
+    // colour key
+    if (s.legend && s.w >= 640) {
+      const lx = s.w - 196, ly = 64, lw = 150;
+      for (let k = 0; k < lw; k++) {
+        const [r, g, b, a] = cmap(Math.floor((k / lw) * LV) / LV);
+        c.fillStyle = `rgba(${r | 0},${g | 0},${b | 0},${Math.max(a, 0.12)})`;
+        c.fillRect(lx + k, ly, 1, 6);
+      }
+      c.strokeStyle = Wt(0.25); c.strokeRect(lx - 0.5, ly - 0.5, lw + 1, 7);
+      c.fillStyle = Wt(0.5);
+      c.font = `9px ${MONO}`;
+      c.fillText("SOFT", lx, ly + 20);
+      c.textAlign = "right"; c.fillText("STIFF", lx + lw, ly + 20); c.textAlign = "left";
+    }
   };
 
   const streamCols: { x: number; v: number; s: string[]; hot: number }[] = [];
@@ -206,31 +344,34 @@ const { kind } = Astro.props;
     }
   };
 
-  const wave = (c: Ctx, s: State) => {
-    const mid = s.h * 0.5, amp = Math.min(60, s.h * 0.18);
-    const drift = Math.sin(s.t * 0.35) * 0.5 + 0.5; // 0 = in sync, 1 = apart
-    const traces = [
-      { ph: 0, col: O(0.85), lw: 1.6 },
-      { ph: 1.4 * drift, col: Wt(0.28), lw: 1 },
-      { ph: -1.1 * drift, col: Wt(0.16), lw: 1 },
-    ];
-    for (const tr of traces) {
-      c.strokeStyle = tr.col;
-      c.lineWidth = tr.lw;
+  const ribbon = (c: Ctx, s: State) => {
+    if (!s.mem) {
+      const R = rng(s.seed);
+      s.mem = {
+        k1: 0.004 + R() * 0.004, k2: 0.009 + R() * 0.008, k3: 0.006 + R() * 0.006,
+        p1: R() * 6.28, p2: R() * 6.28, p3: R() * 6.28,
+        a1: 0.18 + R() * 0.12, a2: 0.05 + R() * 0.07, gap: 4 + R() * 3, lines: 13 + Math.floor(R() * 6),
+        tilt: (R() - 0.5) * 0.35,
+      };
+    }
+    const m = s.mem, mid = s.h * 0.5, M = m.lines, x0 = s.w * 0.18;
+    for (let i = 0; i < M; i++) {
+      const u = i / (M - 1) - 0.5; // −0.5 … 0.5 across the band
+      const core = 1 - Math.abs(u) * 2; // 1 at the centre
+      c.strokeStyle = core > 0.55 ? O(0.25 + core * 0.6) : Wt(0.06 + core * 0.22);
+      c.lineWidth = core > 0.8 ? 1.4 : 1;
       c.beginPath();
-      for (let x = s.w * 0.25; x <= s.w; x += 3) {
-        const u = x / 90 - s.t * 1.6 + tr.ph;
-        const env = Math.min(1, (x - s.w * 0.25) / (s.w * 0.2));
-        const y = mid + (Math.sin(u) + 0.35 * Math.sin(u * 2.7 + tr.ph)) * amp * env;
-        x === s.w * 0.25 ? c.moveTo(x, y) : c.lineTo(x, y);
+      for (let x = x0; x <= s.w + 4; x += 4) {
+        const fade = Math.min(1, (x - x0) / (s.w * 0.25));
+        const spine = mid + (x - s.w * 0.6) * m.tilt
+          + s.h * m.a1 * Math.sin(x * m.k1 + m.p1 + s.t * 0.22)
+          + s.h * m.a2 * Math.sin(x * m.k2 + m.p2 - s.t * 0.31);
+        const width = m.gap * (1.1 + 0.8 * Math.sin(x * m.k3 + m.p3 + s.t * 0.18)); // pinches and swells
+        const y = spine + u * M * width * fade;
+        x === x0 ? c.moveTo(x, y) : c.lineTo(x, y);
       }
       c.stroke();
     }
-    c.strokeStyle = Wt(0.08);
-    c.beginPath(); c.moveTo(s.w * 0.25, mid); c.lineTo(s.w, mid); c.stroke();
-    c.fillStyle = O(1);
-    c.font = `10px ${MONO}`;
-    c.fillText(`SYNC ${(100 - drift * 62).toFixed(1)}%`, s.w - 110, mid - amp - 18);
   };
 
   const noise = (c: Ctx, s: State) => {
@@ -246,7 +387,7 @@ const { kind } = Astro.props;
     c.fillRect(0, y + 12, s.w, 1);
   };
 
-  const DRAW: Record<string, (c: Ctx, s: State) => void> = { scan, contour, stream, reticle, film, radar, wave, noise };
+  const DRAW: Record<string, (c: Ctx, s: State) => void> = { network, terrain, stream, reticle, film, radar, ribbon, noise };
 
   document.querySelectorAll<HTMLCanvasElement>("canvas.header-motif").forEach((canvas) => {
     const host = canvas.parentElement as HTMLElement;
@@ -254,7 +395,14 @@ const { kind } = Astro.props;
     const draw = DRAW[canvas.dataset.kind ?? ""];
     if (!host || !c || !draw) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const s: State = { w: 1, h: 1, t: 3, mx: 0, my: 0, hover: false };
+    const hash = (str: string) => [...str].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261) >>> 0;
+    const s: State = {
+      w: 1, h: 1, t: 3, mx: 0, my: 0, hover: false,
+      seed: hash(canvas.dataset.seed || "saphir"),
+      n: Number(canvas.dataset.count) || 13,
+      legend: canvas.dataset.legend !== "0",
+      mem: null,
+    };
     let dpr = 1;
 
     const frame = () => {
