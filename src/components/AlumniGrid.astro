@@ -1,0 +1,92 @@
+---
+/*
+  AlumniGrid — former members as small portrait cards ("Dr Jane Smith"),
+  each opening that person's full profile (bio, links, publications).
+
+  Data: people entries with `status: alumni`. Keep their original `group` so they
+  stay in place on the select screen; optional `title` ("Dr"), `programme`
+  ("PhD", "Postdoc", …) and `year` (year they left / graduated) fill the card.
+*/
+import { Image } from "astro:assets";
+import { withBase } from "../lib/urls";
+import type { Person } from "../lib/content";
+
+interface Props {
+  people: Person[];
+}
+const { people } = Astro.props;
+const list = [...people].sort(
+  (a, b) => (b.data.year ?? 0) - (a.data.year ?? 0) || a.data.name.localeCompare(b.data.name),
+);
+const initials = (n: string) =>
+  n.split(/\s+/).map((t) => t[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+---
+
+{
+  list.length > 0 ? (
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {list.map((p) => (
+        <li>
+          <a href={withBase(`/people/${p.id}`)} class="alum group" data-sfx="tick">
+            <span class="alum-img">
+              {p.data.headshot ? (
+                <Image src={p.data.headshot} alt="" width={128} height={128} class="h-full w-full object-cover" />
+              ) : (
+                <span class="flex h-full w-full items-center justify-center font-display text-lg text-slate-400">{initials(p.data.name)}</span>
+              )}
+            </span>
+            <span class="min-w-0">
+              <span class="block font-serif text-base leading-tight text-slate-900 transition-colors group-hover:text-accent-700">
+                {p.data.title ? `${p.data.title} ` : ""}{p.data.name}
+              </span>
+              <span class="label-mono mt-1 block text-slate-500">
+                {[p.data.programme, p.data.year].filter(Boolean).join(" · ") || p.data.role}
+              </span>
+            </span>
+            <span class="alum-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="label-mono text-slate-400">Alumni will appear here.</p>
+  )
+}
+
+<style>
+  .alum {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem 2rem 0.6rem 0.6rem;
+    border: 1px solid #e2e8f0;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .alum:hover,
+  .alum:focus-visible {
+    border-color: #df6335;
+    background: #fdf3ee;
+  }
+  .alum-img {
+    flex: none;
+    width: 3.5rem;
+    height: 3.5rem;
+    overflow: hidden;
+    background: #f1f5f9;
+  }
+  .alum-arrow {
+    position: absolute;
+    right: 0.75rem;
+    color: #b4b4b0;
+    transition:
+      transform 0.2s,
+      color 0.2s;
+  }
+  .alum:hover .alum-arrow {
+    color: #df6335;
+    transform: translateX(3px);
+  }
+</style>

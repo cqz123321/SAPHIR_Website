@@ -69,7 +69,7 @@ const ICONS: Record<LinkType, { d: string; color?: string }> = {
         <a href={withBase("/people")} class="label-mono group inline-flex items-center gap-2 transition-colors hover:text-white">
           <span class="transition-transform group-hover:-translate-x-0.5" aria-hidden="true">&larr;</span> All people
         </a>
-        <span class="label-mono text-accent-400">{person.data.group}{no && <span class="text-neutral-600"> / No. {String(no).padStart(2, "0")}</span>}</span>
+        <span class="label-mono text-accent-400">{person.data.status === "alumni" ? `Alumni${person.data.year ? " · " + person.data.year : ""}` : person.data.group}{no && <span class="text-neutral-600"> / No. {String(no).padStart(2, "0")}</span>}</span>
       </div>
 
       <div class="grid gap-8 py-12 sm:grid-cols-[13rem_1fr] sm:items-end sm:py-14 lg:grid-cols-[16rem_1fr]">
@@ -85,10 +85,9 @@ const ICONS: Record<LinkType, { d: string; color?: string }> = {
         </div>
 
         <div class="min-w-0">
-          <p class="label-mono text-neutral-500">{role}</p>
+          <p class="label-mono text-neutral-500">{[title, role].filter(Boolean).join(" · ")}</p>
           <h1 class="prof-name font-display mt-3">{name}</h1>
           <span class="prof-rule" aria-hidden="true"></span>
-          {title && <p class="mt-4 max-w-2xl text-neutral-400">{title}</p>}
           {
             linkItems.length > 0 && (
               <ul class="mt-5 flex flex-wrap items-center gap-2">

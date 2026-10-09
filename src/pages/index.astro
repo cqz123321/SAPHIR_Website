@@ -9,9 +9,10 @@ import PeopleSelect from "../components/PeopleSelect.astro";
 
 const official = "https://www.sems.qmul.ac.uk/research/groups/softrobotics/";
 
-const team = (await getGroupedPeople())
-  .flatMap((g) => g.people)
-  .filter((p) => p.data.status === "current");
+const everyone = (await getGroupedPeople()).flatMap((g) => g.people);
+// Same people + order as the People-page select screen (alumni keep their place).
+const selectable = everyone.filter((p) => !/^(msc|meng)$/i.test(p.data.programme ?? "") && p.data.group !== "Alumni");
+const team = selectable.filter((p) => p.data.status === "current");
 
 const themes = [
   {
@@ -188,7 +189,7 @@ const spec = [
       </div>
 
       <div class="mt-10">
-        <PeopleSelect people={team} variant="strip" />
+        <PeopleSelect people={selectable} variant="strip" />
       </div>
       <p class="label-mono mt-4 text-neutral-600">Select a member ↑</p>
     </div>

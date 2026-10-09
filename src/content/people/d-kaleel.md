@@ -1,11 +1,14 @@
 ---
 name: "Danyaal Mohamed Kaleel"
-status: current
+status: alumni
 group: Students
 role: "PhD Student"
+title: "Dr"
+programme: "PhD"
+year: 2026
 headshot: ../../assets/people/d-kaleel.jpg
 order: 10
 featured: false
 ---
 
-Danyaal Kaleel is a PhD student whose research focuses on buoyancy actuation of underwater soft robots. His research is funded by the Defense Science and Technology Laboratory (DSTL). He currently holds a BEng degree in Robotics Engineering (2021) from Queen Mary University of London.
+Danyaal Kaleel completed his PhD in 2026. His research focused on buoyancy actuation of underwater soft robots and was funded by the Defence Science and Technology Laboratory (DSTL). He also holds a BEng degree in Robotics Engineering (2021) from Queen Mary University of London.

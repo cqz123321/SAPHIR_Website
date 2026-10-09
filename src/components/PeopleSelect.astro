@@ -54,7 +54,7 @@ const bigs =
           <span class="pv-corner tl"></span><span class="pv-corner tr"></span><span class="pv-corner br"></span><span class="pv-corner bl"></span>
         </div>
         <div class="pv-info">
-          <p class="label-mono text-accent-400"><span data-pv-no>No. 01</span> · <span data-pv-group>{list[0]?.data.group}</span></p>
+          <p class="label-mono text-accent-400"><span data-pv-no>No. 01</span> · <span data-pv-group>{list[0]?.data.status === "alumni" ? `Alumni · ${list[0]?.data.group}` : list[0]?.data.group}</span></p>
           <p class="pv-name font-display" data-pv-name>{list[0]?.data.name}</p>
           <p class="pv-role" data-pv-role>{list[0]?.data.role}</p>
           <p class="pv-bio" data-pv-bio>{firstSentence(list[0]?.body ?? "")}</p>
@@ -72,11 +72,11 @@ const bigs =
           data-sfx="cursor"
           data-sfx-click="select"
           data-i={i}
-          data-name={p.data.name}
+          data-name={p.data.status === "alumni" && p.data.title ? `${p.data.title} ${p.data.name}` : p.data.name}
           data-role={p.data.role}
-          data-group={p.data.group}
+          data-group={p.data.status === "alumni" ? `Alumni · ${p.data.group}` : p.data.group}
           data-bio={firstSentence(p.body ?? "")}
-          aria-label={`${p.data.name} — ${p.data.role}`}
+          aria-label={`${p.data.title ? p.data.title + " " : ""}${p.data.name} — ${p.data.status === "alumni" ? "alumni, " : ""}${p.data.role}`}
         >
           <Image src={p.data.headshot!} alt="" width={240} height={240} class="tile-img" />
           <span class="tile-frame" aria-hidden="true"></span>

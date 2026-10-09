@@ -41,8 +41,10 @@ const people = defineCollection({
         .default({}),
       order: z.number().default(0),
       featured: z.boolean().default(false),
-      // Alumni details (shown in the compact Alumni table on the People page).
-      // Use with `status: alumni` and `group: Alumni`; all optional.
+      // Alumni / student-project details, all optional. Alumni: `status: alumni`
+      // (keep the original `group`) + title "Dr", programme, year → Alumni cards.
+      // MSc/MEng students: programme "MSc"/"MEng" + project, supervisors, year →
+      // the MSc projects table.
       programme: z.string().optional(), //        e.g. "PhD", "MSc", "MEng"
       project: z.string().optional(), //          research project title
       supervisors: z.string().optional(), //      supervisor name(s)

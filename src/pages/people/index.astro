@@ -3,20 +3,26 @@ import BaseLayout from "../../components/BaseLayout.astro";
 import PageHeader from "../../components/PageHeader.astro";
 import PersonGroup from "../../components/PersonGroup.astro";
 import PeopleSelect from "../../components/PeopleSelect.astro";
-import AlumniList from "../../components/AlumniList.astro";
+import AlumniGrid from "../../components/AlumniGrid.astro";
+import ProjectTable from "../../components/ProjectTable.astro";
 import { getGroupedPeople } from "../../lib/content";
 
 const groups = await getGroupedPeople();
 const groupLabels: Record<string, string> = { Faculty: "Principal Investigator", Researchers: "Postdoctoral Researchers", Students: "PhD Students" };
-const current = groups.flatMap((g) => g.people).filter((p) => p.data.status === "current");
-const alumni = groups.flatMap((g) => g.people).filter((p) => p.data.status === "alumni" || p.data.group === "Alumni");
+const everyone = groups.flatMap((g) => g.people);
+const isProject = (p: (typeof everyone)[number]) => /^(msc|meng)$/i.test(p.data.programme ?? "");
+// Select screen: current members AND alumni, in their usual group/order positions.
+const selectable = everyone.filter((p) => !isProject(p) && p.data.group !== "Alumni");
+const current = selectable.filter((p) => p.data.status === "current");
+const alumni = everyone.filter((p) => !isProject(p) && (p.data.status === "alumni" || p.data.group === "Alumni"));
+const projects = everyone.filter(isProject);
 const currentGroups = groups
-  .map((g) => ({ ...g, people: g.people.filter((p) => !alumni.includes(p)) }))
+  .map((g) => ({ ...g, people: g.people.filter((p) => current.includes(p)) }))
   .filter((g) => g.people.length > 0);
-const readout = groups
-  .filter((g) => g.group !== "Alumni")
-  .map((g) => `${g.group} ${String(g.people.length).padStart(2, "0")}`)
-  .join(" / ");
+const readout = [
+  ...currentGroups.map((g) => `${g.group} ${String(g.people.length).padStart(2, "0")}`),
+  `Alumni ${String(alumni.length).padStart(2, "0")}`,
+].join(" / ");
 ---
 
 <BaseLayout
@@ -41,7 +47,7 @@ const readout = groups
         <p class="label-mono text-accent-400">Select a member</p>
         <p class="label-mono hidden text-neutral-600 sm:block">Hover to preview · click to open profile</p>
       </div>
-      <PeopleSelect people={current} variant="screen" />
+      <PeopleSelect people={selectable} variant="screen" />
     </div>
   </section>
 
@@ -52,13 +58,22 @@ const readout = groups
     </div>
     {currentGroups.map((g, i) => <PersonGroup title={groupLabels[g.group] ?? g.group} people={g.people} index={i + 1} />)}
 
-    <section class="mt-6">
-      <div class="mb-6 flex items-baseline gap-4 border-b border-slate-200 pb-3">
+    <section class="mb-16">
+      <div class="mb-6 flex items-baseline gap-4 border-b border-slate-900 pb-3">
         <span class="label-mono text-accent-600">G.{String(currentGroups.length + 1).padStart(2, "0")}</span>
-        <h2 class="font-serif text-xl tracking-tight text-slate-900">Alumni</h2>
+        <h2 class="font-serif text-2xl tracking-tight text-slate-900">Alumni</h2>
         <span class="label-mono ml-auto text-slate-400">{String(alumni.length).padStart(2, "0")}</span>
       </div>
-      <AlumniList people={alumni} />
+      <AlumniGrid people={alumni} />
+    </section>
+
+    <section>
+      <div class="mb-6 flex items-baseline gap-4 border-b border-slate-200 pb-3">
+        <span class="label-mono text-accent-600">G.{String(currentGroups.length + 2).padStart(2, "0")}</span>
+        <h2 class="font-serif text-xl tracking-tight text-slate-900">MSc projects</h2>
+        <span class="label-mono ml-auto text-slate-400">{String(projects.length).padStart(2, "0")}</span>
+      </div>
+      <ProjectTable people={projects} />
     </section>
   </div>
 </BaseLayout>
