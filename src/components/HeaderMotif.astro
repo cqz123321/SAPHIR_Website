@@ -14,6 +14,8 @@
     radar    Contact       — range rings, a sweep, and a ping at Mile End
     ribbon   Profiles      — a band of contour lines (like the logo's), shaped
                              by the person's slug so every profile is unique
+    timeline News          — a time axis drifting past, with events lighting up
+                             as they cross the "now" line
     noise    404           — faint static and a rolling tear
 
   Pauses off-screen; draws a single still frame for prefers-reduced-motion.
@@ -374,6 +376,42 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
     }
   };
 
+  const timeline = (c: Ctx, s: State) => {
+    const y = s.h * 0.56, speed = 22, gap = 18, x0 = s.w * 0.22;
+    const now = s.w * 0.72;
+    const shift = (s.t * speed) % gap;
+    // axis + ticks (a long tick every 6 small ones, labelled like months)
+    c.strokeStyle = Wt(0.18); c.lineWidth = 1;
+    c.beginPath(); c.moveTo(x0, y + 0.5); c.lineTo(s.w, y + 0.5); c.stroke();
+    const first = Math.floor((s.t * speed) / gap);
+    c.font = `9px ${MONO}`;
+    for (let k = 0, x = x0 - shift + gap; x < s.w + gap; k++, x += gap) {
+      const idx = first + k + 1;
+      const major = idx % 6 === 0;
+      c.strokeStyle = Wt(major ? 0.3 : 0.12);
+      c.beginPath(); c.moveTo(x, y - (major ? 9 : 4)); c.lineTo(x, y + (major ? 9 : 4)); c.stroke();
+      if (major) { c.fillStyle = Wt(0.28); c.fillText(String(((idx / 6) % 12) + 1).padStart(2, "0"), x - 6, y + 24); }
+      // events: a deterministic sprinkling of markers along the axis
+      const h = Math.sin(idx * 12.9898) * 43758.5453; const r = h - Math.floor(h);
+      if (r > 0.82) {
+        const lit = Math.max(0, 1 - Math.abs(x - now) / 120);
+        const stem = 18 + (r - 0.82) * 260;
+        c.strokeStyle = lit > 0.02 ? O(0.3 + lit * 0.7) : Wt(0.16);
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - stem); c.stroke();
+        c.fillStyle = lit > 0.02 ? O(0.5 + lit * 0.5) : Wt(0.35);
+        c.beginPath(); c.arc(x, y - stem, 2.5 + lit * 2, 0, Math.PI * 2); c.fill();
+        if (lit > 0.6) { c.strokeStyle = O(0.5 * lit); c.beginPath(); c.arc(x, y - stem, 9 + (1 - lit) * 20, 0, Math.PI * 2); c.stroke(); }
+      }
+    }
+    // the "now" cursor
+    c.strokeStyle = O(0.8);
+    c.setLineDash([3, 4]);
+    c.beginPath(); c.moveTo(now, 20); c.lineTo(now, s.h - 20); c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = O(1); c.font = `10px ${MONO}`;
+    c.fillText("NOW", now + 8, 34);
+  };
+
   const noise = (c: Ctx, s: State) => {
     const n = Math.floor((s.w * s.h) / 900);
     for (let i = 0; i < n; i++) {
@@ -387,7 +425,7 @@ const { kind, seed = "", count = 13, legend = true } = Astro.props;
     c.fillRect(0, y + 12, s.w, 1);
   };
 
-  const DRAW: Record<string, (c: Ctx, s: State) => void> = { network, terrain, stream, reticle, film, radar, ribbon, noise };
+  const DRAW: Record<string, (c: Ctx, s: State) => void> = { network, terrain, stream, reticle, film, radar, ribbon, timeline, noise };
 
   document.querySelectorAll<HTMLCanvasElement>("canvas.header-motif").forEach((canvas) => {
     const host = canvas.parentElement as HTMLElement;

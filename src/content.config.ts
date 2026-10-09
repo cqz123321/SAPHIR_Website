@@ -1,5 +1,6 @@
-import { defineCollection, reference } from "astro:content";
+import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
+import { bibtexLoader, AREA_SLUGS } from "./lib/bibtex";
 import { z } from "zod";
 
 /*
@@ -55,71 +56,20 @@ const people = defineCollection({
     }),
 });
 
-// Publications — frontmatter only (any markdown body is optional notes).
+// Publications — read from BibTeX: every entry in every .bib file in
+// src/content/publications/ is one paper (see src/lib/bibtex.ts).
 const publications = defineCollection({
-  // Files named sample-*.md are the template's placeholders and are skipped.
-  loader: glob({ pattern: ["**/*.md", "!**/sample-*.md"], base: "./src/content/publications" }),
+  loader: bibtexLoader("./src/content/publications"),
   schema: z.object({
     title: z.string(),
     authors: z.array(z.string()),
     year: z.number(),
     journal: z.string().optional(),
     doi: z.string().optional(),
-    pmid: z.string().optional(),
-    pmcid: z.string().optional(),
-    url: z.url().optional(),
-    scholarUrl: z.url().optional(),
-    citations: z.number().optional(),
-    isMenteePaper: z.boolean().default(false),
-    menteeFirstAuthor: z.boolean().default(false),
-    // The lab PI is first or last (senior) author.
-    piFirstOrSenior: z.boolean().default(false),
-    featured: z.boolean().default(false),
-    openAccess: z.boolean().default(false),
-    // Research tags — topic/population AREAS (drive the Research page) plus
-    // cross-cutting facets. One field; a paper may carry several. The vocabulary
-    // is mirrored in src/lib/content.ts — keep the two in sync when you edit it.
-    areas: z
-      .array(
-        z.enum([
-          "soft-robotics",
-          "tactile-sensing",
-          "autonomy",
-          "medical",
-          "assistive",
-          "field",
-          "review",
-          "letter",
-        ]),
-      )
-      .default([]),
+    url: z.string().optional(),
+    // Research areas — mirrored by labels/groups in src/lib/content.ts.
+    areas: z.array(z.enum(AREA_SLUGS)).default([]),
   }),
-});
-
-// Figures — gated by rightsConfirmed (hard gate, defaults closed).
-const figures = defineCollection({
-  loader: glob({ pattern: ["**/*.md", "!**/sample-*.md"], base: "./src/content/figures" }),
-  schema: ({ image }) =>
-    z.object({
-      image: image(),
-      paper: reference("publications"),
-      caption: z.string(),
-      citation: z.string(),
-      doi: z.string().optional(),
-      pmid: z.string().optional(),
-      journal: z.string().optional(),
-      license: z.enum([
-        "CC-BY",
-        "CC-BY-SA",
-        "CC0",
-        "publisher-permission",
-        "unknown",
-      ]),
-      licenseUrl: z.url().optional(),
-      // Hard gate: only true figures are ever rendered.
-      rightsConfirmed: z.boolean().default(false),
-      order: z.number().default(0),
-    }),
 });
 
 // Gallery — lab-life photos.
@@ -135,4 +85,16 @@ const gallery = defineCollection({
     }),
 });
 
-export const collections = { people, publications, figures, gallery };
+// News — one short Markdown file per item in src/content/news/ (see its README).
+const news = defineCollection({
+  loader: glob({ pattern: ["**/*.md", "!**/README.md"], base: "./src/content/news" }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    type: z.enum(["Paper", "Talk", "Event", "Award", "People", "Media"]).default("Event"),
+    link: z.string().optional(),
+    linkLabel: z.string().optional(),
+  }),
+});
+
+export const collections = { people, publications, gallery, news };

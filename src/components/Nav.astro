@@ -2,7 +2,7 @@
 import { Image } from "astro:assets";
 import { withBase } from "../lib/urls";
 import { site } from "../data/site";
-import mark from "../assets/brand/saphir-mark.png";
+import mark from "../assets/brand/mark-transparent.png";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const pathname = Astro.url.pathname.slice(basePath.length) || "/";
@@ -25,7 +25,7 @@ const isActive = (href: string) =>
 
     <div class="flex items-center gap-1">
       <!-- Desktop links -->
-      <ul class="hidden items-center md:flex">
+      <ul class="hidden items-center lg:flex">
         {
           site.nav.map((item, i) => (
             <li>
@@ -55,7 +55,7 @@ const isActive = (href: string) =>
       <button
         type="button"
         id="nav-toggle"
-        class="inline-flex items-center justify-center p-2 text-slate-700 hover:bg-slate-100 md:hidden"
+        class="inline-flex items-center justify-center p-2 text-slate-700 hover:bg-slate-100 lg:hidden"
         aria-controls="mobile-menu"
         aria-expanded="false"
       >
@@ -71,7 +71,7 @@ const isActive = (href: string) =>
   </nav>
 
   <!-- Mobile menu -->
-  <div id="mobile-menu" class="hidden border-t border-slate-200 bg-white md:hidden">
+  <div id="mobile-menu" class="hidden border-t border-slate-200 bg-white lg:hidden">
     <ul class="container-page py-2">
       {
         site.nav.map((item, i) => (
@@ -119,9 +119,9 @@ const isActive = (href: string) =>
   .nav-link:hover {
     color: #0b0b0b;
   }
-  @media (max-width: 1023px) {
+  @media (max-width: 1279px) {
     .nav-link {
-      padding: 0.5rem 0.45rem;
+      padding: 0.5rem 0.5rem;
     }
     .nav-idx {
       display: none;

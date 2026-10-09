@@ -60,18 +60,11 @@ to adjust `getGroupedPeople()` in `src/lib/content.ts` — it can derive the sur
 
 ## Step 4 — Publications
 
-Two options:
-
-- **Quick:** “Here’s my CV / Google Scholar — create `src/content/publications/*.md` for each paper
-  (one file per paper, frontmatter per the schema). Tag each with my `areas`, set
-  `piFirstOrSenior`/`isMenteePaper` appropriately, and set `openAccess` where there’s a PMCID.”
-- **Scripted (bulk):** generate `scripts/data/cv-publications.json`
-  (`[{title, authors:[{name,mentee,coFirstSenior}], journal, year, doi, pmid, pmcid}]`), set the
-  PI surname via `PI_SURNAME`, then `node scripts/migrate-publications.mjs`. It’s additive — re-run
-  it when you publish new papers and it adds only the new ones.
-
-Citation counts fill in automatically once you enable the weekly Action (see SETUP.md), or ask
-Claude to add `citations:` manually.
+Publications are read from **BibTeX**: every `.bib` file in `src/content/publications/` is loaded
+and every entry becomes one paper (`src/lib/bibtex.ts`). To add a paper, paste its BibTeX into
+`saphir.bib` or drop a downloaded `.bib` file into that folder. An optional
+`keywords = {soft-robotics, medical}` field sets its research areas; otherwise they are guessed from
+the title. See `src/content/publications/README.md`.
 
 ## Step 4b — Profile links (ORCID, LinkedIn, …)
 
@@ -109,14 +102,12 @@ link and a tick box) to confirm — it then adds only the ones you approve. ORCI
 publication co-authorship (the `enrich:orcid` script) are the most reliable; same-name LinkedIn
 profiles are the easiest to get wrong, so click through and confirm each.
 
-## Step 5 — Figures (mind the copyright gate)
+## Step 5 — Figures (mind the copyright)
 
-Figures render **only** if `rightsConfirmed: true` (default is `false`). Only post figures you have
-the right to (open-access/CC, or your own author-reuse rights).
-
-> **Prompt:** “Add a figure: image at `src/assets/figures/___.png`, from paper `<pub-slug>`, caption
-> ___, license CC-BY (or publisher-permission). Set rightsConfirmed only if I confirm I have the
-> rights.”
+Figures are listed in `src/data/figures.ts`, grouped by research area. Only use figures you may
+reuse — e.g. from papers published under CC BY — and keep the credit and licence fields filled in.
+Images live in `src/assets/figures/`; `scripts/fetch-figures.mjs` downloads any missing image from
+its `source` URL before `npm run dev` / `npm run build`.
 
 ## Step 6 — Lab Life photos
 
@@ -189,6 +180,6 @@ Keep the PR scoped to the template change — no lab-specific content, secrets, 
 - Keep all frontmatter valid against `src/content.config.ts`; run `npm run build` to verify.
 - A person’s “slug” is their Markdown filename without `.md` (used in `NON_MENTEE_SLUGS` and figure
   `paper:` references → publication slugs).
-- Don’t set `rightsConfirmed: true` on a figure unless the user confirms they hold the rights.
+- Only add figures from papers whose licence allows reuse (e.g. CC BY), with credit and licence filled in.
 - Prefer editing content + `site.ts` + `lib/content.ts` over editing the page components.
 - Match the existing code style; keep components data-driven.

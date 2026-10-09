@@ -13,18 +13,11 @@ const chip =
 const years = pubs.map((p) => p.data.year);
 const since = years.length ? Math.min(...years) : undefined;
 
-const filters = [
-  { key: "all", label: "All" },
-  { key: "mentee", label: "Mentee-led" },
-  { key: "pi", label: "PI first/senior" },
-  { key: "collaboration", label: "Collaboration" },
-  { key: "openaccess", label: "Open access" },
-];
 ---
 
 <BaseLayout
   title="Publications"
-  description="Peer-reviewed publications from the lab. Filter by role or research area, sort by date or citations."
+  description="Publications from the SAPHIR group, filterable by research area."
 >
   <PageHeader
     index={3}
@@ -32,9 +25,9 @@ const filters = [
     eyebrow="Research output"
     title="Publications"
     meta={`${pubs.length} papers${since ? ` · since ${since}` : ""}`}
-    lead="Peer-reviewed work from the lab and its collaborators. Filter by role or by research area, sort by date or citation count. Compiled from the QMUL publications list and OpenAlex; citation counts from OpenAlex."
+    lead="Work by members of the group, newest first. Filter by research area or search by title and author."
   >
-    <Fragment slot="readout">Sources · QMUL / OpenAlex</Fragment>
+    <Fragment slot="readout">Newest first</Fragment>
   </PageHeader>
   <div class="container-page py-14 pb-24">
     <div class="mb-8 space-y-3">
@@ -52,15 +45,6 @@ const filters = [
       </button>
 
       <div id="pub-filters" class="hidden space-y-3 md:block">
-        <div class="flex flex-wrap items-center gap-2">
-          {
-            filters.map((f) => (
-              <button data-sfx="tick" class={chip} data-filter={f.key} data-active={f.key === "all" ? "" : undefined}>
-                {f.label} <span data-count />
-              </button>
-            ))
-          }
-        </div>
 
         <div class="flex flex-wrap items-center gap-2">
           <span class="label-mono mr-1 text-accent-600">Area</span>
@@ -83,11 +67,6 @@ const filters = [
           placeholder="Search title or author…"
           class="min-w-56 flex-1 border-0 border-b-2 border-slate-900 bg-transparent px-1 py-2 text-base placeholder:text-slate-400 focus:border-accent-500 focus:outline-none"
         />
-        <div class="flex items-center gap-2 text-sm text-slate-600">
-          <span class="label-mono text-accent-600">Sort</span>
-          <button data-sfx="tick" class={chip} data-sort="date" data-active>Newest</button>
-          <button data-sfx="tick" class={chip} data-sort="citations">Most cited</button>
-        </div>
         <span id="pub-count" class="label-mono text-slate-500"></span>
       </div>
     </div>
@@ -101,9 +80,7 @@ const filters = [
 
   <script>
     const list = document.getElementById("pub-list");
-    const items = list
-      ? ([...list.querySelectorAll<HTMLElement>("[data-pub]")] as HTMLElement[])
-      : [];
+    const items = list ? [...list.querySelectorAll<HTMLElement>("[data-pub]")] : [];
     const search = document.getElementById("pub-search") as HTMLInputElement | null;
     const countEl = document.getElementById("pub-count");
     const emptyEl = document.getElementById("pub-empty");
@@ -116,99 +93,42 @@ const filters = [
       filtersPanel?.classList.toggle("hidden");
     });
 
-    const filterBtns = [...document.querySelectorAll<HTMLElement>("[data-filter]")];
     const areaBtns = [...document.querySelectorAll<HTMLElement>("[data-area]")];
-    const sortBtns = [...document.querySelectorAll<HTMLElement>("[data-sort]")];
-
-    // role filter key -> the li dataset flag it tests ("all" tests nothing)
-    const FLAG: Record<string, string> = {
-      mentee: "mentee",
-      pi: "piSenior",
-      collaboration: "collaboration",
-      openaccess: "openaccess",
-    };
-    let filter = "all";
     let area = "all";
-    let sort = "date";
 
-    const num = (li: HTMLElement, k: string) => Number(li.dataset[k] ?? 0);
-
-    function fillCounts() {
-      for (const b of filterBtns) {
-        const f = b.dataset.filter!;
-        const c =
-          f === "all" ? items.length : items.filter((li) => li.dataset[FLAG[f]] === "true").length;
-        const span = b.querySelector("[data-count]");
-        if (span) span.textContent = `(${c})`;
-      }
-    }
-
-    function applySort() {
-      if (!list) return;
-      const arr = [...items].sort((a, b) =>
-        sort === "citations"
-          ? num(b, "citations") - num(a, "citations") || num(b, "year") - num(a, "year")
-          : num(b, "year") - num(a, "year"),
-      );
-      for (const li of arr) list.appendChild(li);
-    }
-
-    function applyFilter() {
+    function apply() {
       const q = (search?.value ?? "").trim().toLowerCase();
       let n = 0;
       for (const li of items) {
-        const okFilter = filter === "all" || li.dataset[FLAG[filter]] === "true";
         const okArea = area === "all" || (li.dataset.areas ?? "").split(" ").includes(area);
         const okSearch = !q || (li.dataset.search ?? "").includes(q);
-        const show = okFilter && okArea && okSearch;
-        li.hidden = !show;
-        if (show) n++;
+        li.hidden = !(okArea && okSearch);
+        if (!li.hidden) n++;
       }
       if (countEl) countEl.textContent = `${n} of ${items.length}`;
       if (emptyEl) emptyEl.classList.toggle("hidden", n !== 0);
     }
 
-    const setActive = (btns: HTMLElement[], active: HTMLElement) => {
-      for (const x of btns) {
-        if (x === active) x.setAttribute("data-active", "");
-        else x.removeAttribute("data-active");
-      }
-    };
+    const setActive = (active: HTMLElement) =>
+      areaBtns.forEach((x) => (x === active ? x.setAttribute("data-active", "") : x.removeAttribute("data-active")));
 
-    for (const b of filterBtns)
-      b.addEventListener("click", () => {
-        filter = b.dataset.filter ?? "all";
-        setActive(filterBtns, b);
-        applyFilter();
-      });
     for (const b of areaBtns)
       b.addEventListener("click", () => {
         area = b.dataset.area ?? "all";
-        setActive(areaBtns, b);
-        applyFilter();
+        setActive(b);
+        apply();
       });
-    for (const b of sortBtns)
-      b.addEventListener("click", () => {
-        sort = b.dataset.sort ?? "date";
-        setActive(sortBtns, b);
-        applySort();
-      });
-    search?.addEventListener("input", applyFilter);
+    search?.addEventListener("input", apply);
 
-    // Deep link: /publications#<area-slug> pre-selects that area filter.
+    // Deep link: /publications#<area-slug> pre-selects that area.
     const hash = decodeURIComponent(location.hash.replace(/^#/, ""));
-    if (hash) {
-      const btn = areaBtns.find((b) => b.dataset.area === hash);
-      if (btn) {
-        area = hash;
-        setActive(areaBtns, btn);
-        filtersPanel?.classList.remove("hidden"); // reveal on mobile so the active chip shows
-        filtersToggle?.setAttribute("aria-expanded", "true");
-      }
+    const fromHash = areaBtns.find((b) => b.dataset.area === hash);
+    if (fromHash) {
+      area = hash;
+      setActive(fromHash);
+      filtersPanel?.classList.remove("hidden");
+      filtersToggle?.setAttribute("aria-expanded", "true");
     }
-
-    fillCounts();
-    applySort();
-    applyFilter();
+    apply();
   </script>
 </BaseLayout>

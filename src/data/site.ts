@@ -60,6 +60,7 @@ export const site: SiteConfig = {
     { label: "Research", href: "/research" },
     { label: "Publications", href: "/publications" },
     { label: "Figures", href: "/figures" },
+    { label: "News", href: "/news" },
     { label: "Lab Life", href: "/lab-life" },
     { label: "Contact", href: "/contact" },
   ],

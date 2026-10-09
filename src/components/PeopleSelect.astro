@@ -22,11 +22,13 @@ const { people, variant = "strip" } = Astro.props;
 const list = people.filter((p) => p.data.headshot);
 const cols = Math.min(list.length, variant === "strip" ? 13 : 5);
 
-const firstSentence = (s: string) => {
-  const t = s.replace(/\s+/g, " ").trim();
-  const m = t.match(/^(.{40,220}?[.!?])(\s|$)/);
-  return m ? m[1] : t.slice(0, 200);
-};
+// Full bio as plain text (markdown links and emphasis removed) for the preview panel.
+const plainBio = (s: string) =>
+  s
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`#>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 const bigs =
   variant === "screen"
     ? await Promise.all(list.map((p) => getImage({ src: p.data.headshot!, width: 720, height: 720, format: "webp" })))
@@ -57,7 +59,7 @@ const bigs =
           <p class="label-mono text-accent-400"><span data-pv-no>No. 01</span> · <span data-pv-group>{list[0]?.data.status === "alumni" ? `Alumni · ${list[0]?.data.group}` : list[0]?.data.group}</span></p>
           <p class="pv-name font-display" data-pv-name>{list[0]?.data.name}</p>
           <p class="pv-role" data-pv-role>{list[0]?.data.credentials ? `${list[0]?.data.role} · ${list[0]?.data.credentials}` : list[0]?.data.role}</p>
-          <p class="pv-bio" data-pv-bio>{firstSentence(list[0]?.body ?? "")}</p>
+          <p class="pv-bio" data-pv-bio>{plainBio(list[0]?.body ?? "")}</p>
         </div>
       </div>
     )
@@ -75,7 +77,7 @@ const bigs =
           data-name={p.data.status === "alumni" && p.data.title ? `${p.data.title} ${p.data.name}` : p.data.name}
           data-role={p.data.credentials ? `${p.data.role} · ${p.data.credentials}` : p.data.role}
           data-group={p.data.status === "alumni" ? `Alumni · ${p.data.group}` : p.data.group}
-          data-bio={firstSentence(p.body ?? "")}
+          data-bio={plainBio(p.body ?? "")}
           aria-label={`${p.data.title ? p.data.title + " " : ""}${p.data.name} — ${p.data.status === "alumni" ? "alumni, " : ""}${p.data.role}`}
         >
           <Image src={p.data.headshot!} alt="" width={240} height={240} class="tile-img" />

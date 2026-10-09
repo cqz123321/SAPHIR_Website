@@ -2,7 +2,6 @@ import { getCollection, type CollectionEntry } from "astro:content";
 
 export type Person = CollectionEntry<"people">;
 export type Publication = CollectionEntry<"publications">;
-export type Figure = CollectionEntry<"figures">;
 
 // Tag vocabulary (must match the `areas` enum in content.config.ts). A paper may
 // carry several — a research topic, an application, and a publication type.
@@ -105,41 +104,6 @@ export async function getPublications() {
   );
 }
 
-/** Only rights-confirmed figures may ever be rendered (hard gate). */
-export async function getConfirmedFigures() {
-  const figs = await getCollection("figures");
-  return figs
-    .filter((f) => f.data.rightsConfirmed === true)
-    .sort((a, b) => a.data.order - b.data.order);
-}
-
-/** Rights-confirmed figures grouped by their publication, ordered for display. */
-export async function getFiguresByPaper() {
-  const figs = await getConfirmedFigures();
-  const pubById = new Map((await getCollection("publications")).map((p) => [p.id, p]));
-  const groups = new Map<string, { paper: Publication; figures: Figure[]; order: number }>();
-  for (const f of figs) {
-    const id = f.data.paper.id;
-    const paper = pubById.get(id);
-    if (!paper) continue;
-    if (!groups.has(id)) groups.set(id, { paper, figures: [], order: f.data.order });
-    groups.get(id)!.figures.push(f);
-  }
-  // Order a paper's figures by figure number parsed from the legend (Figure 2,
-  // 5, 9, …); a graphical abstract (no number) leads, anything unparsed trails.
-  const figNum = (caption: string) => {
-    const m = /^\s*fig(?:ure)?\.?\s*(\d+)/i.exec(caption);
-    if (m) return Number(m[1]);
-    if (/graphical abstract/i.test(caption)) return 0;
-    return Number.POSITIVE_INFINITY;
-  };
-  const arr = [...groups.values()];
-  for (const g of arr) g.figures.sort((a, b) => figNum(a.data.caption) - figNum(b.data.caption));
-  // Papers chronological, most recent first.
-  arr.sort((a, b) => b.paper.data.year - a.paper.data.year || a.order - b.order);
-  return arr;
-}
-
 // --- author <-> person matching (best-effort, for profile pages) -----------
 
 const normAlpha = (s: string) =>
@@ -191,27 +155,13 @@ export function menteeMatcher(people: Person[]) {
   };
 }
 
-const menteeLed = (p: Publication, isMentee: (a: string) => boolean) =>
-  isMentee(p.data.authors[0] ?? "");
 
-/**
- * Featured predicate: a mentee-led paper, or a PI first/senior paper from
- * 2019 on. Mentee status is membership-derived (see menteeMatcher).
- */
-export function featuredMatcher(people: Person[]) {
-  const isMentee = menteeMatcher(people);
-  return (p: Publication) => {
-    // Letters and reviews aren't "featured" primary research on the homepage.
-    if (p.data.areas.includes("letter") || p.data.areas.includes("review")) return false;
-    return menteeLed(p, isMentee) || (p.data.piFirstOrSenior && p.data.year >= 2019);
-  };
+
+/** News items, newest first. */
+export async function getNews() {
+  const items = await getCollection("news");
+  return items.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
-/** Sort featured papers: mentee-led first, then most recent. */
-export function featuredSorter(people: Person[]) {
-  const isMentee = menteeMatcher(people);
-  return (a: Publication, b: Publication) => {
-    const diff = Number(menteeLed(b, isMentee)) - Number(menteeLed(a, isMentee));
-    return diff || b.data.year - a.data.year;
-  };
-}
+export const fmtNewsDate = (d: Date) =>
+  d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });

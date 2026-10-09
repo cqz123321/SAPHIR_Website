@@ -1,12 +1,13 @@
 ---
 import { withBase } from "../lib/urls";
 import { site } from "../data/site";
-import { getGroupedPeople } from "../lib/content";
+import { getGroupedPeople, getNews, fmtNewsDate } from "../lib/content";
 import BaseLayout from "../components/BaseLayout.astro";
 import TaxelField from "../components/TaxelField.astro";
 import ResearchPlate from "../components/ResearchPlate.astro";
 import PeopleSelect from "../components/PeopleSelect.astro";
 
+const latestNews = (await getNews()).slice(0, 3);
 const official = "https://www.sems.qmul.ac.uk/research/groups/softrobotics/";
 
 const everyone = (await getGroupedPeople()).flatMap((g) => g.people);
@@ -176,12 +177,42 @@ const spec = [
     </ol>
   </section>
 
-  <!-- ============ 04 PEOPLE ============ -->
+  <!-- ============ 04 NEWS ============ -->
+  {latestNews.length > 0 && (
+    <section class="border-t border-slate-200 bg-neutral-50">
+      <div class="container-page py-20">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="label-mono text-accent-600">04 — News</p>
+            <h2 class="mt-3 font-serif text-4xl tracking-tight">Latest</h2>
+          </div>
+          <a href={withBase("/news")} class="text-sm font-medium text-slate-900 underline decoration-accent-500 decoration-2 underline-offset-4 hover:text-accent-700" data-sfx="tick">All news →</a>
+        </div>
+        <ol class="mt-10 grid gap-x-8 md:grid-cols-3">
+          {latestNews.map((n) => (
+            <li class="home-news border-t-2 border-slate-900 pt-4 pb-8">
+              <div class="flex items-center gap-3">
+                <time class="label-mono text-slate-500" datetime={n.data.date.toISOString().slice(0, 10)}>{fmtNewsDate(n.data.date)}</time>
+                <span class="label-mono text-accent-600">{n.data.type}</span>
+              </div>
+              <h3 class="mt-3 font-serif text-xl leading-snug tracking-tight text-slate-900">
+                {n.data.link ? (
+                  <a href={n.data.link} target="_blank" rel="noopener noreferrer" class="transition-colors hover:text-accent-700" data-sfx="tick">{n.data.title}</a>
+                ) : n.data.title}
+              </h3>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )}
+
+  <!-- ============ 05 PEOPLE ============ -->
   <section class="bg-[#0b0b0b] text-white">
     <div class="container-page py-20">
       <div class="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
         <div>
-          <p class="label-mono text-accent-400">04 — People</p>
+          <p class="label-mono text-accent-400">05 — People</p>
           <h2 class="mt-3 font-serif text-4xl tracking-tight text-white">Meet the people behind SAPHIR</h2>
           <p class="mt-3 text-neutral-400">{team.length} team members · Faculty, postdoctoral researchers and PhD students.</p>
         </div>

@@ -7,14 +7,26 @@
     kind="tactile"  a hexagonal taxel array with a moving contact + row profile
     kind="arm"      a manipulator reaching down to an object, with a sensor's view
 
+  detail  (Research page) adds a layer of fine detail — taxel IDs and electrode
+          combs, film folds and material notes on the everting body, joint-angle
+          scales — plus a ×2.5 magnifier that follows the cursor to read it.
+
   To use a real photo instead, swap <ResearchPlate> for an <Image> in index.astro.
 */
 interface Props {
   kind: "soft" | "tactile" | "arm";
   index: number;
   tag: string;
+  detail?: boolean;
 }
-const { kind, index, tag } = Astro.props;
+const { kind, index, tag, detail = false } = Astro.props;
+const ZOOM = 2.5;
+const ticks = (r1: number, r2: number, n = 24) =>
+  Array.from({ length: n }, (_, k) => {
+    const a = (k / n) * Math.PI * 2;
+    const r = k % 6 === 0 ? r2 + 1.2 : r2;
+    return `M${(r1 * Math.cos(a)).toFixed(2)} ${(r1 * Math.sin(a)).toFixed(2)}L${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`;
+  }).join("");
 const id = `plate-${kind}`;
 const fig = `FIG.${String(index).padStart(2, "0")}`;
 
@@ -39,7 +51,7 @@ const p0 = (t: { x: number; y: number }) =>
 const PROFILE_ROW = 3;
 ---
 
-<figure class="plate" data-plate={kind}>
+<figure class:list={["plate", detail && "plate-detail"]} data-plate={kind} data-zoom={detail ? ZOOM : undefined}>
   <svg viewBox="0 0 400 280" role="img" aria-label={`Illustration: ${tag.toLowerCase()}`}>
     <defs>
       <pattern id={`${id}-dots`} width="20" height="20" patternUnits="userSpaceOnUse">
@@ -50,6 +62,12 @@ const PROFILE_ROW = 3;
       </pattern>
     </defs>
 
+    {detail && (
+      <defs>
+        <clipPath id={`${id}-lens`}><circle class="lens-clip" r="46" cx="-100" cy="-100"></circle></clipPath>
+      </defs>
+    )}
+    <g id={`${id}-art`}>
     <rect width="400" height="280" fill={`url(#${id}-dots)`}></rect>
 
     <!-- frame: corner ticks, labels, scale bar -->
@@ -86,12 +104,35 @@ const PROFILE_ROW = 3;
         <circle cx="50" cy="180" r="3" fill="#8c8c8c"></circle>
         <path d="M4 200H22M16 196L22 200L16 204" fill="none" stroke="#df6335"></path>
         <text x="24" y="232" class="t">BASE · P</text>
+        {detail && (
+          <g class="micro" font-size="3" fill="#8c8c8c" letter-spacing="0.3">
+            <text x="50" y="199" text-anchor="middle">SPOOLED BODY</text>
+            <text x="50" y="164" text-anchor="middle">PRESSURE CHAMBER</text>
+            <text x="2" y="194">AIR IN</text>
+            <text x="150" y="227" text-anchor="middle">OBSTACLE</text>
+            <text x="300" y="81" text-anchor="middle">OBSTACLE</text>
+            <path d="M118 202l6 -4M262 104l-6 6" stroke="#df6335" stroke-width="0.4"></path>
+            <text x="98" y="207">CLEARANCE</text>
+            <text x="258" y="99" text-anchor="end">CLEARANCE</text>
+          </g>
+        )}
 
         <!-- body grows in, holds, fades, repeats -->
         <g mask={`url(#${id}-grow)`}>
           <use href={`#${id}-path`} fill="none" stroke="#d4d4d4" stroke-width="22"></use>
           <use href={`#${id}-path`} fill="none" stroke="#0f0f0f" stroke-width="19.5"></use>
           <use href={`#${id}-path`} fill="none" stroke="#df6335" stroke-width="1.2" stroke-dasharray="3 7" class="flow"></use>
+          {detail && (
+            <g class="micro">
+              <use href={`#${id}-path`} fill="none" stroke="#d4d4d4" stroke-opacity="0.22" stroke-width="18" stroke-dasharray="0.5 5.5"></use>
+              <text font-size="3" fill="#a3a3a3" letter-spacing="0.3" dy="-6.2">
+                <textPath href={`#${id}-path`} startOffset="3%">OUTER WALL · THIN PE FILM · STATIONARY RELATIVE TO THE ENVIRONMENT · OUTER WALL · THIN PE FILM</textPath>
+              </text>
+              <text font-size="3" fill="#df6335" letter-spacing="0.3" dy="2.8">
+                <textPath href={`#${id}-path`} startOffset="6%">INNER MATERIAL FEEDS FORWARD → → → EVERTS AT THE TIP → → →</textPath>
+              </text>
+            </g>
+          )}
         </g>
         <!-- everting tip -->
         <g>
@@ -129,11 +170,23 @@ const PROFILE_ROW = 3;
             );
           })}
         </g>
+        {detail && (
+          <g class="micro" pointer-events="none">
+            {taxels.map((t, k) => (
+              <g transform={`translate(${t.x.toFixed(2)} ${t.y.toFixed(2)})`}>
+                <path d="M-3.6 -3.2V1.6M-1.2 -1.6V3.2M1.2 -3.2V1.6M3.6 -1.6V3.2M-3.6 -3.2H1.2M-1.2 3.2H3.6" fill="none" stroke="#d4d4d4" stroke-opacity="0.45" stroke-width="0.35"></path>
+                <text y="7.6" font-size="2.4" fill="#a3a3a3" text-anchor="middle" letter-spacing="0.2">T{String(k + 1).padStart(2, "0")}</text>
+              </g>
+            ))}
+            <text x="30" y="243" font-size="3" fill="#8c8c8c" letter-spacing="0.3">72 TAXELS · INTERDIGITATED ELECTRODES · ROW-COLUMN SCAN</text>
+          </g>
+        )}
         <g class="contact" transform={`translate(${C0.x} ${C0.y})`} fill="none" stroke="#df6335">
           <circle r="20" stroke-opacity="0.9"></circle>
           <circle r="38" stroke-opacity="0.5" stroke-dasharray="2 4"></circle>
           <circle r="56" stroke-opacity="0.25" stroke-dasharray="2 4"></circle>
           <path d="M-5 0H5M0 -5V5" stroke="#fff"></path>
+          {detail && <text x="22" y="-16" font-size="3" fill="#df6335" stroke="none" letter-spacing="0.3">CONTACT · PEAK</text>}
         </g>
         <!-- row profile -->
         <path d={`M24 ${72 + PROFILE_ROW * 1.5 * R}h-8`} stroke="#df6335"></path>
@@ -172,9 +225,22 @@ const PROFILE_ROW = 3;
           <path d="M160 232h8M208 232h8"></path>
         </g>
         <text x="218" y="222" class="t">TARGET</text>
+        {detail && (
+          <g class="micro" font-size="3" fill="#a3a3a3" letter-spacing="0.3">
+            <text x="188" y="233" text-anchor="middle" fill="#df6335">SOFT OBJECT</text>
+            <text x="190" y="178">PLANNED APPROACH</text>
+            <text x="44" y="236">BASE FRAME</text>
+          </g>
+        )}
 
         <!-- sensor + field of view -->
         <rect x="318" y="58" width="26" height="16" rx="2" fill="#0f0f0f" stroke="#d4d4d4"></rect>
+        {detail && (
+          <g class="micro" stroke="#d4d4d4" stroke-opacity="0.35" stroke-width="0.25">
+            <path d="M320 60h22M320 62h22M320 64h22M320 68h22M320 70h22M320 72h22M321 59v14M323 59v14M325 59v14M337 59v14M339 59v14M341 59v14"></path>
+            <text x="331" y="80" font-size="2.6" fill="#a3a3a3" stroke="none" text-anchor="middle" letter-spacing="0.2">DEPTH CAMERA</text>
+          </g>
+        )}
         <circle cx="331" cy="66" r="4" fill="none" stroke="#d4d4d4"></circle>
         <path d="M322 74L176 226M340 74L204 230" stroke="#6b6b6b" stroke-dasharray="1 4"></path>
         <text x="378" y="92" class="t" text-anchor="end">D = <tspan class="range">0.42</tspan> M</text>
@@ -182,6 +248,12 @@ const PROFILE_ROW = 3;
         <!-- manipulator: three nested revolute joints -->
         <path d="M70 240L76 222H104L110 240Z" fill="#0f0f0f" stroke="#d4d4d4"></path>
         <g transform="translate(90 222)">
+          {detail && (
+            <g class="micro">
+              <path d={ticks(10, 12)} stroke="#d4d4d4" stroke-opacity="0.5" stroke-width="0.35"></path>
+              <text x="-17" y="-13" font-size="3" fill="#df6335" letter-spacing="0.3">q1</text>
+            </g>
+          )}
           <g>
             <animateTransform attributeName="transform" type="rotate" values="-8;14;-8" keyTimes="0;0.5;1"
               dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
@@ -189,6 +261,12 @@ const PROFILE_ROW = 3;
             <circle r="8" fill="#0f0f0f" stroke="#d4d4d4"></circle>
             <circle r="2" fill="#d4d4d4"></circle>
             <g transform="translate(0 -85)">
+              {detail && (
+                <g class="micro">
+                  <path d={ticks(9, 11)} stroke="#d4d4d4" stroke-opacity="0.5" stroke-width="0.35"></path>
+                  <text x="-16" y="-10" font-size="3" fill="#df6335" letter-spacing="0.3">q2</text>
+                </g>
+              )}
               <g>
                 <animateTransform attributeName="transform" type="rotate" values="10;35;10" keyTimes="0;0.5;1"
                   dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
@@ -196,6 +274,12 @@ const PROFILE_ROW = 3;
                 <circle r="7" fill="#0f0f0f" stroke="#d4d4d4"></circle>
                 <circle r="2" fill="#d4d4d4"></circle>
                 <g transform="translate(75 0)">
+                  {detail && (
+                    <g class="micro">
+                      <path d={ticks(8, 10)} stroke="#d4d4d4" stroke-opacity="0.5" stroke-width="0.35"></path>
+                      <text x="-14" y="-9" font-size="3" fill="#df6335" letter-spacing="0.3">q3</text>
+                    </g>
+                  )}
                   <g>
                     <animateTransform attributeName="transform" type="rotate" values="40;0;40" keyTimes="0;0.5;1"
                       dur="8s" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1" repeatCount="indefinite"></animateTransform>
@@ -203,6 +287,7 @@ const PROFILE_ROW = 3;
                     <circle r="6" fill="#0f0f0f" stroke="#d4d4d4"></circle>
                     <path d="M26 -7V7M26 -7H36M26 7H36" fill="none" stroke="#d4d4d4"></path>
                     <circle cx="31" cy="0" r="1.8" fill="#df6335"></circle>
+                    {detail && <text x="39" y="-2" font-size="2.6" fill="#a3a3a3" letter-spacing="0.2">TCP</text>}
                   </g>
                 </g>
               </g>
@@ -211,11 +296,56 @@ const PROFILE_ROW = 3;
         </g>
       </g>
     )}
+    </g>
+    {detail && (
+      <g class="loupe" aria-hidden="true">
+        <g clip-path={`url(#${id}-lens)`}>
+          <rect width="400" height="280" fill="#0f0f0f"></rect>
+          <g class="loupe-view"></g>
+        </g>
+        <g class="loupe-ring" transform="translate(-100 -100)" fill="none">
+          <circle r="46" stroke="#df6335" stroke-width="1.2"></circle>
+          <circle r="49" stroke="#df6335" stroke-opacity="0.3" stroke-width="0.6" stroke-dasharray="1 3"></circle>
+          <path d="M-46 0h-7M46 0h7M0 -46v-7M0 46v7" stroke="#df6335"></path>
+          <text x="34" y="44" font-size="7" fill="#df6335" stroke="none" class="t">×{ZOOM}</text>
+        </g>
+      </g>
+    )}
+    {detail && <text x="378" y="259" class="t loupe-hint" text-anchor="end">HOVER TO MAGNIFY</text>}
   </svg>
 </figure>
 
 <script>
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Magnifier for detail plates: a clipped, scaled copy of the drawing that follows the pointer.
+  // (A deep clone rather than <use>: Chrome won't render SMIL-animated content through <use>.)
+  document.querySelectorAll<HTMLElement>("figure.plate-detail").forEach((fig) => {
+    const svg = fig.querySelector("svg") as SVGSVGElement;
+    const lens = fig.querySelector<SVGCircleElement>(".lens-clip");
+    const view = fig.querySelector<SVGGElement>(".loupe-view");
+    const ring = fig.querySelector<SVGGElement>(".loupe-ring");
+    const art = svg?.querySelector<SVGGElement>(`#plate-${fig.dataset.plate}-art`);
+    const z = Number(fig.dataset.zoom) || 2.5;
+    if (!svg || !lens || !view || !ring || !art) return;
+    const copy = art.cloneNode(true) as SVGGElement;
+    copy.removeAttribute("id");
+    copy.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id")); // url(#…) refs still resolve to the originals
+    view.appendChild(copy);
+    const move = (e: PointerEvent) => {
+      const m = svg.getScreenCTM();
+      if (!m) return;
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      lens.setAttribute("cx", String(p.x));
+      lens.setAttribute("cy", String(p.y));
+      view.setAttribute("transform", `translate(${p.x} ${p.y}) scale(${z}) translate(${-p.x} ${-p.y})`);
+      ring.setAttribute("transform", `translate(${p.x} ${p.y})`);
+      fig.classList.add("is-zooming");
+    };
+    svg.addEventListener("pointermove", move);
+    svg.addEventListener("pointerdown", move);
+    svg.addEventListener("pointerleave", () => fig.classList.remove("is-zooming"));
+  });
 
   document.querySelectorAll<HTMLElement>("figure.plate").forEach((fig) => {
     const svg = fig.querySelector("svg") as SVGSVGElement | null;
@@ -240,8 +370,9 @@ const PROFILE_ROW = 3;
         row: +el.dataset.row!,
         col: +el.dataset.col!,
       }));
-      const bars = [...svg.querySelectorAll<SVGRectElement>(".bars rect")];
-      const contact = svg.querySelector<SVGGElement>(".contact");
+      // The magnifier holds a copy of the drawing, so update every copy of the bars / contact marker.
+      const barSets = [...svg.querySelectorAll<SVGGElement>(".bars")].map((g) => [...g.querySelectorAll<SVGRectElement>("rect")]);
+      const contacts = [...svg.querySelectorAll<SVGGElement>(".contact")];
       const s2 = 2 * 30 * 30;
       const t0 = performance.now();
       const tick = (now: number) => {
@@ -249,15 +380,17 @@ const PROFILE_ROW = 3;
           const t = (now - t0) / 1000;
           const cx = 132 + 52 * Math.sin(t * 0.55);
           const cy = 146 + 36 * Math.sin(t * 0.83 + 0.6);
-          contact?.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+          for (const c of contacts) c.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
           for (const c of cells) {
             const p = Math.exp(-((c.x - cx) ** 2 + (c.y - cy) ** 2) / s2);
             c.el.setAttribute("fill-opacity", (p * 0.85).toFixed(3));
             c.el.setAttribute("stroke-opacity", (0.22 + p * 0.6).toFixed(3));
-            if (c.row === 3 && bars[c.col]) {
+            if (c.row === 3) {
               const h = p * 140;
-              bars[c.col].setAttribute("y", (160 - h).toFixed(1));
-              bars[c.col].setAttribute("height", h.toFixed(1));
+              for (const bars of barSets) {
+                bars[c.col]?.setAttribute("y", (160 - h).toFixed(1));
+                bars[c.col]?.setAttribute("height", h.toFixed(1));
+              }
             }
           }
         }
@@ -285,6 +418,21 @@ const PROFILE_ROW = 3;
     font-size: 8.5px;
     letter-spacing: 0.12em;
     fill: #8c8c8c;
+  }
+  .plate-detail svg {
+    cursor: crosshair;
+    touch-action: pan-y;
+  }
+  .plate .loupe {
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .plate.is-zooming .loupe {
+    opacity: 1;
+  }
+  .plate.is-zooming .loupe-hint {
+    opacity: 0;
   }
   .plate :global(.flow) {
     animation: plate-flow 0.9s linear infinite;

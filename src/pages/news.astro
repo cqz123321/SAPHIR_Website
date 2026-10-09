@@ -1,0 +1,97 @@
+---
+import { render } from "astro:content";
+import BaseLayout from "../components/BaseLayout.astro";
+import PageHeader from "../components/PageHeader.astro";
+import { getNews, fmtNewsDate } from "../lib/content";
+
+// News items live in src/content/news/ — one Markdown file each (see its README).
+const items = await Promise.all(
+  (await getNews()).map(async (n) => ({ ...n, Content: (await render(n)).Content })),
+);
+const years = [...new Set(items.map((n) => n.data.date.getFullYear()))];
+const types = [...new Set(items.map((n) => n.data.type))];
+---
+
+<BaseLayout title="News" description="Papers, talks, events and other news from the SAPHIR group.">
+  <PageHeader
+    index={5}
+    motif="timeline"
+    eyebrow="Latest"
+    title="News"
+    lead="Papers, talks, events and people news from the group, newest first."
+    meta={`${items.length} items`}
+  >
+    <Fragment slot="readout">{types.join(" / ")}</Fragment>
+  </PageHeader>
+
+  <div class="container-page py-16 pb-24">
+    {
+      items.length === 0 ? (
+        <p class="py-10 text-center text-slate-600">News coming soon.</p>
+      ) : (
+        <div class="space-y-16">
+          {years.map((y) => (
+            <section>
+              <div class="mb-2 flex items-baseline gap-4 border-b border-slate-900 pb-3">
+                <h2 class="font-display text-4xl text-slate-900">{y}</h2>
+                <span class="label-mono ml-auto text-slate-400">
+                  {String(items.filter((n) => n.data.date.getFullYear() === y).length).padStart(2, "0")}
+                </span>
+              </div>
+              <ol>
+                {items
+                  .filter((n) => n.data.date.getFullYear() === y)
+                  .map((n) => (
+                    <li class="news-item grid gap-x-8 gap-y-2 border-b border-slate-200 py-7 sm:grid-cols-[9rem_1fr]">
+                      <div class="flex items-center gap-3 sm:block">
+                        <time class="label-mono block text-slate-500" datetime={n.data.date.toISOString().slice(0, 10)}>
+                          {fmtNewsDate(n.data.date)}
+                        </time>
+                        <span class="label-mono mt-2 inline-block border border-accent-300 px-2 py-0.5 text-accent-700">{n.data.type}</span>
+                      </div>
+                      <div class="min-w-0">
+                        <h3 class="font-serif text-2xl leading-snug tracking-tight text-slate-900">{n.data.title}</h3>
+                        <div class="prose-content mt-2 max-w-3xl leading-relaxed text-slate-600">
+                          <n.Content />
+                        </div>
+                        {n.data.link && (
+                          <a
+                            href={n.data.link}
+                            target={n.data.link.startsWith("http") ? "_blank" : undefined}
+                            rel="noopener noreferrer"
+                            class="link-rule mt-3 inline-block text-sm"
+                            data-sfx="tick"
+                          >
+                            {n.data.linkLabel ?? "Read more"} ↗
+                          </a>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+              </ol>
+            </section>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .news-item {
+    position: relative;
+  }
+  .news-item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -1px;
+    width: 0;
+    height: 2px;
+    background: #df6335;
+    transition: width 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .news-item:hover::before {
+    width: 9rem;
+  }
+</style>
