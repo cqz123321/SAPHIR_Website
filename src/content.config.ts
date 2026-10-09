@@ -28,6 +28,8 @@ const people = defineCollection({
       ]),
       role: z.string(),
       title: z.string().optional(),
+      // Degrees / honours, e.g. "Dipl.-Ing. Aachen, PhD, IEEE Fellow".
+      credentials: z.string().optional(),
       headshot: image().optional(),
       links: z
         .object({
@@ -55,7 +57,8 @@ const people = defineCollection({
 
 // Publications — frontmatter only (any markdown body is optional notes).
 const publications = defineCollection({
-  loader: glob({ pattern: "**/*.md", base: "./src/content/publications" }),
+  // Files named sample-*.md are the template's placeholders and are skipped.
+  loader: glob({ pattern: ["**/*.md", "!**/sample-*.md"], base: "./src/content/publications" }),
   schema: z.object({
     title: z.string(),
     authors: z.array(z.string()),
@@ -76,15 +79,15 @@ const publications = defineCollection({
     // Research tags — topic/population AREAS (drive the Research page) plus
     // cross-cutting facets. One field; a paper may carry several. The vocabulary
     // is mirrored in src/lib/content.ts — keep the two in sync when you edit it.
-    // ⚙️  CUSTOMIZE: replace these example slugs with your field's topics.
     areas: z
       .array(
         z.enum([
-          "topic-one",
-          "topic-two",
-          "topic-three",
-          "methods",
-          "theory",
+          "soft-robotics",
+          "tactile-sensing",
+          "autonomy",
+          "medical",
+          "assistive",
+          "field",
           "review",
           "letter",
         ]),
@@ -95,7 +98,7 @@ const publications = defineCollection({
 
 // Figures — gated by rightsConfirmed (hard gate, defaults closed).
 const figures = defineCollection({
-  loader: glob({ pattern: "**/*.md", base: "./src/content/figures" }),
+  loader: glob({ pattern: ["**/*.md", "!**/sample-*.md"], base: "./src/content/figures" }),
   schema: ({ image }) =>
     z.object({
       image: image(),

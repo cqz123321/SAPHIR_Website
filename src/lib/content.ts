@@ -5,54 +5,53 @@ export type Publication = CollectionEntry<"publications">;
 export type Figure = CollectionEntry<"figures">;
 
 // Tag vocabulary (must match the `areas` enum in content.config.ts). A paper may
-// carry several — a topic/population, a method/approach, and a publication type.
-//
-// ⚙️  CUSTOMIZE: these are EXAMPLE tags. Replace the slugs/labels/blurbs below
-//    (and the matching enum in content.config.ts) with your field's topics.
-//    Keep `review`/`letter` if you want those publication-type facets.
+// carry several — a research topic, an application, and a publication type.
 export type AreaSlug =
-  | "topic-one"
-  | "topic-two"
-  | "topic-three"
-  | "methods"
-  | "theory"
+  | "soft-robotics"
+  | "tactile-sensing"
+  | "autonomy"
+  | "medical"
+  | "assistive"
+  | "field"
   | "review"
   | "letter";
 
 export const AREA_LABELS: Record<AreaSlug, string> = {
-  "topic-one": "Research topic one",
-  "topic-two": "Research topic two",
-  "topic-three": "Research topic three",
-  methods: "Methods & open tools",
-  theory: "Theory & modeling",
+  "soft-robotics": "Soft robotics",
+  "tactile-sensing": "Tactile sensing",
+  autonomy: "Learning & autonomy",
+  medical: "Medical & surgical",
+  assistive: "Assistive & rehabilitation",
+  field: "Underwater & nuclear",
   review: "Review",
   letter: "Letter / commentary",
 };
 
-// Research-page sections, grouped (topics vs. approaches), with blurbs.
+// Research-page sections, grouped (topics vs. applications), with blurbs.
 export const RESEARCH_GROUPS: { title: string; areas: { slug: AreaSlug; blurb: string }[] }[] = [
   {
     title: "Research topics",
     areas: [
-      { slug: "topic-one", blurb: "A sentence describing this line of work and the questions it asks." },
-      { slug: "topic-two", blurb: "A sentence describing this line of work and the questions it asks." },
-      { slug: "topic-three", blurb: "A sentence describing this line of work and the questions it asks." },
+      { slug: "soft-robotics", blurb: "Eversion (vine) robots, fabric and silicone actuators, and soft grippers that bend, grow and squeeze." },
+      { slug: "tactile-sensing", blurb: "Sensing skins and force sensors that tell a robot where, and how hard, it is being touched." },
+      { slug: "autonomy", blurb: "Learning and modelling so that robots can grasp, manipulate and navigate with less human guidance." },
     ],
   },
   {
-    title: "Approaches",
+    title: "Applications",
     areas: [
-      { slug: "methods", blurb: "Reproducible, open tooling and shared resources that make the lab's work possible." },
-      { slug: "theory", blurb: "Conceptual and computational frameworks that tie the lab's empirical work together." },
+      { slug: "medical", blurb: "Tissue palpation, colonoscopy and robot-assisted minimally invasive surgery." },
+      { slug: "assistive", blurb: "Soft wearable gloves and exoskeletons that support grip and hand rehabilitation." },
+      { slug: "field", blurb: "Soft robots for underwater exploration and for inspecting nuclear pipework." },
     ],
   },
 ];
 
 // Publications filter chips, grouped (slugs reference AREA_LABELS).
 export const FILTER_GROUPS: { title: string; slugs: AreaSlug[] }[] = [
-  { title: "Topic", slugs: ["topic-one", "topic-two", "topic-three"] },
-  { title: "Approach", slugs: ["methods", "theory"] },
-  { title: "Type", slugs: ["review", "letter"] },
+  { title: "Topic", slugs: ["soft-robotics", "tactile-sensing", "autonomy"] },
+  { title: "Application", slugs: ["medical", "assistive", "field"] },
+  { title: "Type", slugs: ["review"] },
 ];
 
 /** Research-page groups → each area with its most-recent pubs (capped) + total count. */

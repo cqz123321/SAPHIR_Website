@@ -32,9 +32,9 @@ const filters = [
     eyebrow="Research output"
     title="Publications"
     meta={`${pubs.length} papers${since ? ` · since ${since}` : ""}`}
-    lead="Peer-reviewed work from the lab and its collaborators. Filter by role or by research area, sort by date or citation count; counts are from Google Scholar."
+    lead="Peer-reviewed work from the lab and its collaborators. Filter by role or by research area, sort by date or citation count. Compiled from the QMUL publications list and OpenAlex; citation counts from OpenAlex."
   >
-    <Fragment slot="readout">Indexed · Crossref / Google Scholar</Fragment>
+    <Fragment slot="readout">Sources · QMUL / OpenAlex</Fragment>
   </PageHeader>
   <div class="container-page py-14 pb-24">
     <div class="mb-8 space-y-3">

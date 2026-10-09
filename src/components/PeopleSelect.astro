@@ -56,7 +56,7 @@ const bigs =
         <div class="pv-info">
           <p class="label-mono text-accent-400"><span data-pv-no>No. 01</span> · <span data-pv-group>{list[0]?.data.status === "alumni" ? `Alumni · ${list[0]?.data.group}` : list[0]?.data.group}</span></p>
           <p class="pv-name font-display" data-pv-name>{list[0]?.data.name}</p>
-          <p class="pv-role" data-pv-role>{list[0]?.data.role}</p>
+          <p class="pv-role" data-pv-role>{list[0]?.data.credentials ? `${list[0]?.data.role} · ${list[0]?.data.credentials}` : list[0]?.data.role}</p>
           <p class="pv-bio" data-pv-bio>{firstSentence(list[0]?.body ?? "")}</p>
         </div>
       </div>
@@ -73,7 +73,7 @@ const bigs =
           data-sfx-click="select"
           data-i={i}
           data-name={p.data.status === "alumni" && p.data.title ? `${p.data.title} ${p.data.name}` : p.data.name}
-          data-role={p.data.role}
+          data-role={p.data.credentials ? `${p.data.role} · ${p.data.credentials}` : p.data.role}
           data-group={p.data.status === "alumni" ? `Alumni · ${p.data.group}` : p.data.group}
           data-bio={firstSentence(p.body ?? "")}
           aria-label={`${p.data.title ? p.data.title + " " : ""}${p.data.name} — ${p.data.status === "alumni" ? "alumni, " : ""}${p.data.role}`}

@@ -124,20 +124,7 @@ const anyMarks = pubs.some((p) => starsFor(p).size > 0);
                 // bolded name links + headshots, so they get no marker.
                 const mark = stars.has(a) ? "*" : "";
                 return (
-                  <span class="au">
-                    {i > 0 && ", "}
-                    {person ? (
-                      <a
-                        href={withBase(`/people/${person.slug}`)}
-                        class="font-medium text-slate-900 hover:text-accent-700 hover:underline"
-                      >
-                        {a}
-                      </a>
-                    ) : (
-                      a
-                    )}
-                    {mark && <sup class="font-semibold text-slate-600">{mark}</sup>}
-                  </span>
+                  <span class="au">{i > 0 && ", "}{person ? (<a href={withBase(`/people/${person.slug}`)} class="font-medium text-slate-900 hover:text-accent-700 hover:underline">{a}</a>) : a}{mark && <sup class="font-semibold text-slate-600">{mark}</sup>}</span>
                 );
               })}
             </span>

@@ -9,7 +9,7 @@ interface Props {
 }
 const { person } = Astro.props;
 const { Content } = await render(person);
-const { name, role, headshot, links } = person.data;
+const { name, role, credentials, headshot, links } = person.data;
 
 const initials = name
   .split(",")[0]
@@ -87,6 +87,7 @@ const badges = [
     <h3 class="font-serif text-xl tracking-tight text-slate-900 transition-colors group-hover:text-accent-700">{name}</h3>
   </a>
   <p class="label-mono mt-1 text-slate-500">{role}</p>
+  {credentials && <p class="mt-1 text-sm text-slate-600">{credentials}</p>}
   <div class="prose-content mt-3 min-w-0 break-words space-y-3 text-sm leading-relaxed text-slate-700"><Content /></div>
 </div>
 </div>
